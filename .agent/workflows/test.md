@@ -1,245 +1,59 @@
 ---
-description: Running tests and ensuring quality standards
+description: Universal testing strategy and quality gates
 ---
 
-# Testing Workflow
+# Universal Testing Workflow
 
-This workflow covers running all types of tests and ensuring quality gates are met.
+This workflow defines a comprehensive testing strategy applicable to any software project, emphasizing the "Testing Pyramid" and automated quality gates.
 
-## Test Types
+## 1. Testing Pyramid Levels
 
-### 1. Unit Tests
+### Unit Tests (The Base)
+- **Scope**: Individual functions, classes, or components in isolation.
+- **Speed**: Extremely fast (<10ms).
+- **Goal**: Verify logic correctness and edge cases.
+- **Standard**: Jest, Vitest, JUnit, PyTest.
+- **Mocking**: Heavy use of mocks for dependencies.
 
-Run unit tests for specific modules:
+### Integration Tests (The Middle)
+- **Scope**: Interactions between modules (e.g., API + DB, Component + Store).
+- **Speed**: Moderate.
+- **Goal**: Verify that units work together correctly.
+- **Mocking**: Partial (e.g., real DB, mocked 3rd party API).
 
-// turbo
-```bash
-npm run test:unit
-```
+### End-to-End (E2E) Tests (The Top)
+- **Scope**: Full distinct user flows from UI to Backend.
+- **Speed**: Slow.
+- **Goal**: Verify critical business paths work for the user.
+- **Standard**: Playwright, Cypress, Selenium.
+- **Mocking**: Minimal to None.
 
-Run with coverage:
-```bash
-npm run test:unit -- --coverage
-```
+## 2. Quality Gates
 
-**Quality Gate**: Coverage ≥ 80% for critical modules
+All projects should enforce these gates in their CI pipeline:
 
-### 2. Integration Tests
+- [ ] **Pass Rate**: 100% of tests must pass.
+- [ ] **Coverage**: Target ≥80% line/branch coverage for logic-heavy code.
+- [ ] **Performance**: No regressions in key metrics (Lighthouse, Latency).
+- [ ] **Security**: No known vulnerabilities in dependencies (`npm audit`).
 
-Run integration tests:
+## 3. Test Driven Development (Recommended)
 
-// turbo
-```bash
-npm run test:integration
-```
+1. **Red**: Write a failing test for the desired feature or bugfix.
+2. **Green**: Write the minimal code to make the test pass.
+3. **Refactor**: Improve the code structure while keeping tests green.
 
-**Scope**: API endpoints, database interactions, external service mocks
+## 4. Debugging Failures
 
-### 3. End-to-End Tests
+When a test fails in CI:
 
-Run e2e tests for web:
-```bash
-npm run test:e2e:web
-```
+1. **Local Reproduction**: Run only the failing test locally.
+2. **Logs**: Check CI artifacts/logs for stack traces.
+3. **Environment**: Verify environment variables match CI.
+4. **Bisect**: Use `git bisect` if the cause is unclear.
 
-Run e2e tests for mobile:
-```bash
-npm run test:e2e:mobile
-```
+## 5. Maintenance
 
-**Quality Gate**: Pass rate ≥ 95% for critical paths
-
-### 4. Visual Regression Tests
-
-Run visual tests (if configured):
-```bash
-npm run test:visual
-```
-
-## Test Execution Strategies
-
-### Quick Check (Pre-commit)
-// turbo-all
-```bash
-# Run tests only for changed files
-npm run test:changed
-
-# Run linting
-npm run lint
-
-# Format check
-npm run format:check
-```
-
-### Full Suite (Pre-merge)
-```bash
-# Run all tests
-npm run test:all
-
-# Run security scan
-npm audit
-
-# Check bundle size
-npm run build:analyze
-```
-
-### Pre-deployment Validation
-```bash
-# Run smoke tests
-npm run test:smoke
-
-# Run performance tests
-npm run test:performance
-
-# Validate accessibility
-npm run test:a11y
-```
-
-## Debugging Failed Tests
-
-### 1. Identify Failing Tests
-```bash
-npm run test -- --verbose
-```
-
-### 2. Run Single Test File
-```bash
-npm run test -- path/to/test.spec.js
-```
-
-### 3. Run in Watch Mode
-```bash
-npm run test:watch
-```
-
-### 4. Debug with Node Inspector
-```bash
-node --inspect-brk node_modules/.bin/jest --runInBand
-```
-
-## Coverage Reports
-
-### Generate Coverage Report
-// turbo
-```bash
-npm run test:coverage
-```
-
-### View Coverage Report
-Open `coverage/lcov-report/index.html` in browser
-
-### Coverage Thresholds
-```json
-{
-  "coverageThreshold": {
-    "global": {
-      "branches": 80,
-      "functions": 80,
-      "lines": 80,
-      "statements": 80
-    }
-  }
-}
-```
-
-## Performance Testing
-
-### Web Performance (Lighthouse)
-```bash
-npm run lighthouse
-```
-
-**Target**: All scores ≥ 90
-
-### Mobile Performance
-```bash
-npm run test:performance:mobile
-```
-
-**Target**: Cold start ≤ 2s
-
-## Accessibility Testing
-
-### Automated a11y Tests
-// turbo
-```bash
-npm run test:a11y
-```
-
-**Standard**: WCAG 2.1 Level AA compliance
-
-### Manual Testing Checklist
-- [ ] Keyboard navigation works
-- [ ] Screen reader compatible
-- [ ] Color contrast meets standards
-- [ ] Focus indicators visible
-- [ ] Form labels present
-- [ ] ARIA attributes correct
-
-## Continuous Testing
-
-### Watch Mode for Development
-```bash
-npm run test:watch
-```
-
-### CI Pipeline Tests
-Tests run automatically on:
-- Every commit (unit tests + lint)
-- Pull requests (full suite)
-- Pre-deployment (smoke + e2e)
-
-## Test Maintenance
-
-### Update Snapshots
-```bash
-npm run test:update-snapshots
-```
-
-### Clean Test Cache
-```bash
-npm run test:clear-cache
-```
-
-### Fix Flaky Tests
-1. Identify flaky tests in CI logs
-2. Add proper waits/assertions
-3. Use test retries sparingly
-4. Document in test file if unavoidable
-
-## Quality Gates Summary
-
-Before merging code, ensure:
-- ✅ All unit tests pass
-- ✅ Coverage ≥ 80%
-- ✅ Integration tests pass
-- ✅ E2E critical paths pass (≥95%)
-- ✅ No security vulnerabilities
-- ✅ Lighthouse score ≥ 90 (web)
-- ✅ No accessibility violations
-- ✅ Bundle size within limits
-
-## Troubleshooting
-
-### Tests Timing Out
-- Increase timeout in test configuration
-- Check for unresolved promises
-- Ensure proper cleanup in afterEach
-
-### Flaky Tests
-- Add explicit waits
-- Mock time-dependent code
-- Isolate test data
-
-### Memory Leaks
-- Run with `--detectLeaks`
-- Check for unclosed connections
-- Review event listener cleanup
-
-## Next Steps
-
-After all tests pass:
-1. Review coverage report
-2. Address any gaps in testing
-3. Update test documentation
-4. Proceed with deployment workflow
+- **Flaky Tests**: Quarantine or fix immediately. Never ignore.
+- **Snapshots**: Update mainly on intentional UI changes, review diffs carefully.
+- **Speed**: Parallelize long-running test suites.

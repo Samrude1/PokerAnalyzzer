@@ -1,183 +1,72 @@
 ---
-description: Initial project setup and environment configuration
+description: Universal project setup and bootstrapping guide
 ---
 
-# Project Setup Workflow
+# Universal Setup Workflow
 
-This workflow guides you through setting up a new web/mobile project from scratch.
+This workflow provides a standardized approach to initializing any new software project, ensuring a consistent and high-quality development environment from Day 1.
 
-## Prerequisites
+## 1. Repository Initialization
 
-- Docker Desktop installed (for containerized development)
-- WSL2 enabled (Windows) or native Linux/Mac environment
-- Node.js LTS version installed
-- Git configured with user name and email
+**Objective**: Establish a clean, version-controlled foundation.
 
-## Setup Steps
+- [ ] **Git Init**: `git init` in the project root.
+- [ ] **.gitignore**: Add standard exclusions (node_modules, dist, logs, env vars).
+- [ ] **README.md**: Create a placeholder with "Title", "Description", and "Setup" sections.
+- [ ] **License**: Add appropriate license file.
 
-### 1. Initialize Repository Structure
+## 2. Code Quality Configuration
 
-Create the monorepo structure:
-```
-project/
-├── apps/
-│   ├── web/
-│   └── mobile/
-├── packages/
-│   └── shared/
-├── infra/
-├── docs/
-│   └── decisions/
-├── .agent/
-│   ├── rules/
-│   └── workflows/
-└── tests/
-    ├── unit/
-    ├── integration/
-    └── e2e/
-```
+**Objective**: Enforce consistent style and catch errors early.
 
-### 2. Initialize Git Repository
+- [ ] **EditorConfig**: Create `.editorconfig` to unify editor settings (indentation, line endings).
+- [ ] **Linter**: Install and configure a linter appropriate for the language (e.g., ESLint for JS/TS, Pylint for Python).
+  - *Recommendation*: Use standard/strict configs to avoid bike-shedding.
+- [ ] **Formatter**: Configure a code formatter (Prettier, Black, GoFmt).
+  - *Tip*: Set up "Format on Save" in VS Code `settings.json`.
 
-// turbo
-```bash
-git init
-git add .
-git commit -m "chore: initial commit"
-```
+## 3. Git Hooks (Pre-commit)
 
-### 3. Configure Development Environment
+**Objective**: Prevent bad code from entering the repository.
 
-Create `.editorconfig`:
-```ini
-root = true
+- [ ] **Install Tool**: Use Husky (JS) or pre-commit (Python/General).
+- [ ] **Configure Hooks**:
+  - `pre-commit`: Run lint-staged and unit tests.
+  - `commit-msg`: Enforce Conventional Commits (e.g., "feat: add login").
 
-[*]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-indent_style = space
-indent_size = 2
-trim_trailing_whitespace = true
+## 4. Development Environment
 
-[*.md]
-trim_trailing_whitespace = false
-```
+**Objective**: Ensure "it works on my machine" applies to everyone.
 
-### 4. Setup Linting and Formatting
+- [ ] **Version Pinning**: Create `.nvmrc` (Node), `.python-version`, or `go.mod` to lock runtime versions.
+- [ ] **Dependency Management**: Install dependencies using a lockfile (`package-lock.json`, `yarn.lock`, etc.).
+- [ ] **Environment Variables**:
+  - Create `.env.example` with dummy values.
+  - Add `.env` to `.gitignore`.
 
-Install ESLint and Prettier:
-```bash
-npm install -D eslint prettier eslint-config-prettier
-npx eslint --init
-```
+## 5. Documentation Baseline
 
-Create `.prettierrc`:
-```json
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 100,
-  "tabWidth": 2
-}
-```
+**Objective**: Make the project discoverable and easy to join.
 
-### 5. Setup Commit Hooks
+- [ ] **ARCHITECTURE.md**: High-level system overview and diagram.
+- [ ] **CONTRIBUTING.md**: Guide for new developers (setup, testing standards).
+- [ ] **CHANGELOG.md**: Initialize for tracking version history.
 
-Install husky and commitlint:
-```bash
-npm install -D husky @commitlint/cli @commitlint/config-conventional
-npx husky init
-```
+## 6. CI/CD Skeleton
 
-Create `.commitlintrc.json`:
-```json
-{
-  "extends": ["@commitlint/config-conventional"]
-}
-```
+**Objective**: Automate verification immediately.
 
-### 6. Create Docker Development Environment
+- [ ] **Pipeline Config**: Create `.github/workflows/ci.yml` (or Gitlab CI/CircleCI).
+- [ ] **Jobs**:
+  - `Build`: Verify the project builds.
+  - `Test`: Run unit tests.
+  - `Lint`: Check code style.
 
-Create `docker-compose.yml` for local development:
-```yaml
-version: '3.8'
-services:
-  web:
-    build: ./apps/web
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./apps/web:/app
-    environment:
-      - NODE_ENV=development
-```
+## Verification Checklist
 
-### 7. Initialize Documentation
+Run these commands to verify the setup is robust:
 
-Create baseline documentation files:
-- `README.md` - Project overview and setup instructions
-- `docs/ARCHITECTURE.md` - System architecture
-- `docs/CONTRIBUTING.md` - Contribution guidelines
-- `docs/SECURITY.md` - Security policies
-- `CHANGELOG.md` - Version history
-
-### 8. Setup CI/CD Pipeline
-
-Create `.github/workflows/ci.yml` (or equivalent for your CI platform):
-```yaml
-name: CI
-
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
-```
-
-### 9. Configure Environment Variables
-
-Create `.env.example`:
-```
-NODE_ENV=development
-API_URL=http://localhost:3000
-DATABASE_URL=postgresql://localhost:5432/mydb
-```
-
-Add `.env` to `.gitignore`
-
-### 10. Verify Setup
-
-// turbo
-Run verification checks:
-```bash
-npm run lint
-npm test
-docker-compose up -d
-```
-
-## Success Criteria
-
-- ✅ Repository structure created
-- ✅ Git initialized with proper .gitignore
-- ✅ Linting and formatting configured
-- ✅ Commit hooks working
-- ✅ Docker environment running
-- ✅ Documentation baseline created
-- ✅ CI/CD pipeline configured
-- ✅ All verification checks pass
-
-## Next Steps
-
-After setup is complete:
-1. Run `/webworkflow` to start the development process
-2. Create your first ADR documenting tech stack decisions
-3. Begin Phase 1: Foundation development
+- [ ] `git status` (Should show clean ignore list)
+- [ ] `npm run lint` / `make lint` (Should pass)
+- [ ] `npm test` / `make test` (Should pass)
+- [ ] `npm run build` / `make build` (Should build artifacts)
