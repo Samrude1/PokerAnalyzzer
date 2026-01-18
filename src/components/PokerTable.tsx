@@ -61,7 +61,7 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
                     />
                 ))}
                 {Array.from({ length: 5 - gameState.communityCards.length }).map((_, i) => (
-                    <div key={`placeholder-${i}`} className="w-28 h-[168px] border-2 border-dashed border-white/10 rounded-md bg-white/5" />
+                    <div key={`placeholder-${i}`} className="w-24 h-36 border-2 border-dashed border-white/10 rounded-md bg-white/5" />
                 ))}
             </div>
 

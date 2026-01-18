@@ -60,3 +60,6 @@ Thumbs.db
 
 # Test output
 test_output.txt
+
+# Private documentation (not for public repo)
+docs/

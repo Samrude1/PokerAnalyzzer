@@ -3,6 +3,7 @@ import { Player } from '../game/types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useState } from 'react';
 import { HandDetailsModal } from './HandDetailsModal';
+import { PositionalStatsTable } from './PositionalStatsTable';
 
 interface SessionDashboardProps {
     sessionHands: HandHistory[];
@@ -121,6 +122,13 @@ export function SessionDashboard({ sessionHands, hero, onClose }: SessionDashboa
                             <p className="text-gray-400 text-lg">No hands played yet. Start playing to see your session graph!</p>
                         </div>
                     )}
+
+
+                    {/* Positional Stats */}
+                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 className="text-xl font-bold text-white mb-4">Positional Stats</h3>
+                        <PositionalStatsTable sessionHands={sessionHands} />
+                    </div>
 
                     {/* Hand List */}
                     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">

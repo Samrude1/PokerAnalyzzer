@@ -2,31 +2,34 @@ import { Card } from './Deck';
 
 export type GamePhase = 'pre-flop' | 'flop' | 'turn' | 'river' | 'showdown';
 
+export type BotDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'pro';
+
 export type PlayerRole = 'dealer' | 'small-blind' | 'big-blind' | 'none';
 
 // Position names for 6-max
 export type Position = 'UTG' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB';
 
 export interface PlayerStats {
+    // Percentages (0-100 or ratio)
+    vpip: number;
+    pfr: number;
+    af: number;
+
+    // Counters
     handsPlayed: number;
     handsWon: number;
     vpipCount: number;
     pfrCount: number;
-    // 3-bet tracking
     threeBetCount: number;
     threeBetOpportunity: number;
-    // Advanced
-    betsCount: number;
-    raisesCount: number;
+    aggressionsCount: number; // Bets + Raises
     callsCount: number;
+
+    // Session Tracking
+    sessionPnL: number;
     showdownsReached: number;
     showdownsWon: number;
-    // Session tracking
-    sessionPnL: number; // Running profit/loss from hands played only
 }
-
-// Bot Difficulty Levels
-export type BotDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'pro';
 
 export interface Player {
     id: string;
@@ -60,6 +63,7 @@ export interface WinnerInfo {
 
 export interface HandHistory {
     handNumber: number;
+    heroPosition?: Position; // Track position for this hand (NEW)
     heroNetWon: number;        // Green Line: Total won/lost this hand
     heroShowdownWon: number;    // Blue Line: Won at showdown
     heroNonShowdownWon: number; // Red Line: Won without showdown

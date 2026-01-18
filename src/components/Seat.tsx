@@ -169,7 +169,7 @@ export function Seat({ player, position, isHero, activePlayerId, showCards, isDe
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-[11px] font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             {(() => {
                                 const h = player.stats.handsPlayed;
-                                const af = player.stats.callsCount > 0 ? (player.stats.raisesCount / player.stats.callsCount).toFixed(1) : (player.stats.raisesCount > 0 ? 'INF' : '0.0');
+                                const af = player.stats.af.toFixed(1);
                                 const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / h) * 100) : 0;
                                 const wsd = player.stats.showdownsReached > 0 ? Math.round((player.stats.showdownsWon / player.stats.showdownsReached) * 100) : 0;
                                 return (

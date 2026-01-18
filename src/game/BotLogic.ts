@@ -2,6 +2,8 @@ import { Player, Position } from './types';
 import { PokerGame } from './PokerGame';
 import { HandEvaluator, HandRank } from './HandEvaluator';
 import { Card } from './Deck';
+import { BoardAnalyzer } from './BoardAnalyzer';
+import { OpponentProfiler } from './OpponentProfiler';
 
 /**
  * Advanced 6-max NL Hold'em Bot AI
@@ -42,7 +44,11 @@ export class BotLogic {
                     decision = this.intermediatePreflopDecision(bot, game, position, callCost, canCheck);
                     break;
                 case 'advanced':
+                    decision = this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
+                    break;
                 case 'pro':
+                    decision = this.proPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
+                    break;
                 default:
                     decision = this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
                     break;
@@ -56,7 +62,11 @@ export class BotLogic {
                     decision = this.intermediatePostflopDecision(bot, game, callCost, canCheck, pot);
                     break;
                 case 'advanced':
+                    decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
+                    break;
                 case 'pro':
+                    decision = this.proPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
+                    break;
                 default:
                     decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
                     break;
@@ -138,8 +148,8 @@ export class BotLogic {
         }
 
         // Chases draws passively
-        const boardTexture = this.analyzeBoardTexture(game.state.communityCards);
-        if (boardTexture === 'wet' && callCost < bb * 4) {
+        const texture = BoardAnalyzer.analyze(game.state.communityCards);
+        if (texture.type === 'wet' && callCost < bb * 4) {
             return { action: 'call' };
         }
 
@@ -169,7 +179,8 @@ export class BotLogic {
         const totalStack = bot.chips + bot.currentBet;
 
         // Tight opening ranges
-        const threshold = (position === 'UTG' || position === 'HJ') ? 7 : 5;
+        // Tight opening ranges (slightly loosened)
+        const threshold = (position === 'UTG' || position === 'HJ') ? 6 : 4;
 
         if (grade >= threshold) {
             const raiseAmt = Math.min(game.state.minRaise + bb, totalStack); // Simple 3x-ish raise
@@ -200,7 +211,6 @@ export class BotLogic {
         const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
         const rank = handResult.rank;
         const totalStack = bot.chips + bot.currentBet;
-        const bb = game.state.bigBlindAmount;
         const minRaise = game.state.minRaise;
 
         // Value bets strong hands
@@ -219,7 +229,9 @@ export class BotLogic {
         }
 
         // C-bet dry boards occasionally
-        if (canCheck && this.analyzeBoardTexture(game.state.communityCards) === 'dry' && Math.random() < 0.6) {
+        const texture = BoardAnalyzer.analyze(game.state.communityCards);
+        // More aggressive on dry boards
+        if (canCheck && texture.type === 'dry' && Math.random() < 0.6) {
             const cBet = Math.floor(pot * 0.5);
             const validRaise = Math.max(cBet, minRaise);
             return { action: 'raise', amount: Math.min(validRaise, totalStack) };
@@ -255,17 +267,26 @@ export class BotLogic {
         const facing3Bet = currentBet > bb * 6 && currentBet <= bb * 15;
         const facing4Bet = currentBet > bb * 15;
 
+        // --- OPPONENT PROFILING UPDATE ---
+        let villainType: 'Nit' | 'TAG' | 'LAG' | 'Fish' | 'Unknown' = 'Unknown';
+        if (facingRaise) {
+            // Find potential aggressor (simplification: assume player with matching max bet)
+            const raiser = game.state.players.find(p => p.currentBet === currentBet && p.id !== bot.id && p.status !== 'folded');
+            if (raiser) {
+                villainType = OpponentProfiler.classify(raiser);
+            }
+        }
+
         // Count number of players who have acted
         const playersInPot = game.state.players.filter(p =>
             p.currentBet > 0 && p.status !== 'folded'
         ).length;
         const multiWayPot = playersInPot >= 3;
 
-        // Open raise sizes: 2.5x Standard, 3x from SB
+        // Open raise sizes: 2.5x Standard, 3x from SB or BB
         const isBlind = position === 'SB' || position === 'BB';
-        const openSize = isBlind
-            ? Math.floor(bb * 3)
-            : Math.floor(bb * 2.5);
+        const openMult = isBlind ? 3 : 2.5;
+        const standardOpenAmount = Math.floor(bb * openMult);
 
         const totalStack = bot.chips + bot.currentBet;
 
@@ -313,11 +334,11 @@ export class BotLogic {
                 return { action: 'raise', amount: safeRaise(fourBet) };
             }
             if (facingRaise) {
+                // VS NIT: Still raise for value, but maybe respect their range implies we are tied/behind if they shove
                 const threeBet = threeBetSize(currentBet);
                 return { action: 'raise', amount: safeRaise(threeBet) };
             }
-            const raiseAmt = openSize + currentBet;
-            return { action: 'raise', amount: safeRaise(raiseAmt) };
+            return { action: 'raise', amount: safeRaise(standardOpenAmount) };
         }
 
         // ===== STRONG (JJ, TT, AK, AQs) - Grade 7+ =====
@@ -327,10 +348,21 @@ export class BotLogic {
                 return { action: 'fold' };
             }
             if (facing3Bet) {
+                // VS NIT: Fold JJ/TT/AQ to a 3-bet from a Nit
+                if (villainType === 'Nit') return { action: 'fold' };
+                // VS LAG: Call wider
+                if (villainType === 'LAG') return { action: 'call' };
+
                 if (multiWayPot) return { action: 'fold' };
                 return { action: 'call' };
             }
             if (facingRaise) {
+                // VS FISH: Isolate Raise!
+                if (villainType === 'Fish') {
+                    const isoSize = Math.floor(currentBet * 4); // Big ISO to isolate the fish
+                    return { action: 'raise', amount: safeRaise(isoSize) };
+                }
+
                 // Mix 3-bet/Call
                 if (Math.random() < 0.5) {
                     const threeBet = threeBetSize(currentBet);
@@ -338,17 +370,22 @@ export class BotLogic {
                 }
                 return { action: 'call' };
             }
-            const raiseAmt = openSize + currentBet;
+            const raiseAmt = standardOpenAmount;
             return { action: 'raise', amount: safeRaise(raiseAmt) };
         }
 
         // ===== PLAYABLE (99-66, AJ, KQ, Suited Broadways) - Grade 5+ =====
         // Adjusted: UTG needs Grade 6+, others 5+
-        const threshold = position === 'UTG' ? 6 : 5;
+        // ===== PLAYABLE (99-66, AJ, KQ, Suited Broadways) - Grade 5+ =====
+        // Adjusted: UTG needs Grade 5+, others 4+ (Loosened)
+        const threshold = position === 'UTG' ? 5 : 4;
 
         if (grade >= threshold) {
             if (facing3Bet) return { action: 'fold' };
             if (facingRaise) {
+                // VS NIT: Fold dominated hands (AJ, KQ) against a tight opener
+                if (villainType === 'Nit') return { action: 'fold' };
+
                 // Defend IP or Big Blind
                 if (isLatePosition || position === 'BB') {
                     if (callCost < bb * 4) return { action: 'call' };
@@ -356,7 +393,7 @@ export class BotLogic {
                 return { action: 'fold' };
             }
             // Open Raise
-            const raiseAmt = openSize + currentBet;
+            const raiseAmt = standardOpenAmount;
             return { action: 'raise', amount: safeRaise(raiseAmt) };
         }
 
@@ -366,15 +403,23 @@ export class BotLogic {
 
         // 3-Bet Bluff Logic: A2s-A5s (Suited Wheel Aces)
         if (isSuitedWheelAce && facingRaise && !facing3Bet) {
-            // 3-bet bluff frequency ~30%
-            if (isLatePosition && Math.random() < 0.3) {
-                const threeBet = threeBetSize(currentBet);
-                return { action: 'raise', amount: safeRaise(threeBet) };
+            // VS NIT: Never bluff a Nit
+            if (villainType !== 'Nit') {
+                // 3-bet bluff frequency (Increased)
+                if (isLatePosition && Math.random() < 0.4) {
+                    const threeBet = threeBetSize(currentBet);
+                    return { action: 'raise', amount: safeRaise(threeBet) };
+                }
             }
         }
 
         if (grade >= specThreshold) {
             if (facingRaise) {
+                // VS FISH: Over-limp / Call speculative hands to crack them with implied odds
+                if (villainType === 'Fish' && callCost < bb * 4) {
+                    return { action: 'call' };
+                }
+
                 // Defend BB with wide range
                 if (position === 'BB' && callCost < bb * 3) return { action: 'call' };
                 // Set mine if deep
@@ -384,7 +429,7 @@ export class BotLogic {
 
             // Steal from late position
             if (isLatePosition && !facingRaise) {
-                const raiseAmt = openSize + currentBet;
+                const raiseAmt = standardOpenAmount;
                 return { action: 'raise', amount: safeRaise(raiseAmt) };
             }
             if (canCheck) return { action: 'check' };
@@ -409,14 +454,27 @@ export class BotLogic {
         const phase = game.state.phase;
         const currentBet = game.state.currentBet;
         const totalStack = bot.chips + bot.currentBet;
-        const bb = game.state.bigBlindAmount;
+
+        // --- OPPONENT PROFILING ---
+        let villainType: 'Nit' | 'TAG' | 'LAG' | 'Fish' | 'Unknown' = 'Unknown';
+        // Simplistic assumption: Villain is the one who bet/raised if we are facing a bet
+        // If checking, villain is the remaining active player(s) - simplified to generic 'Unknown' if multiway or check
+        if (callCost > 0) {
+            const aggr = game.state.players.find(p => p.currentBet === currentBet && p.id !== bot.id);
+            if (aggr) villainType = OpponentProfiler.classify(aggr);
+        }
+        // --------------------------
 
         // Board texture analysis
-        const boardTexture = this.analyzeBoardTexture(game.state.communityCards);
+        const texture = BoardAnalyzer.analyze(game.state.communityCards);
+        const { type } = texture;
 
         const betPot = (fraction: number) => {
-            const size = Math.floor(pot * fraction);
-            // Fix: ensure we at least min-raise
+            let mult = 1.0;
+            // Adjust sizing vs Fish
+            if (villainType === 'Fish') mult = 1.2; // Bet bigger for value vs Fish
+
+            const size = Math.floor(pot * fraction * mult);
             return Math.min(Math.max(size, minRaise), totalStack);
         };
 
@@ -436,24 +494,36 @@ export class BotLogic {
         if (rank >= HandRank.Straight) {
             if (facingBet) {
                 // Raise for value
+                // VS LAG: Slowplay/Trap more often?
+                if (villainType === 'LAG' && phase !== 'river' && Math.random() < 0.4) return { action: 'call' };
+
                 if (phase === 'river' && Math.random() < 0.2) return { action: 'call' }; // Trap
                 return { action: 'raise', amount: getRaiseAmount() };
             }
-            // GTO: Polurized sizing on wet boards, merged on dry
-            const betSize = boardTexture === 'dry' ? 0.33 : 0.75;
+
+            // Texture-based sizing
+            let betSize = 0.66;
+            if (type === 'very-wet' || type === 'wet') betSize = 0.8;
+            else if (type === 'very-dry') betSize = 0.33;
+
             return { action: 'raise', amount: betPot(betSize) };
         }
 
         // ===== STRONG (Two Pair, Set) =====
         if (rank >= HandRank.TwoPair) {
             if (facingBet) {
-                if (bigBet && boardTexture === 'wet') {
+                if (bigBet && (type === 'wet' || type === 'very-wet')) {
+                    // scary board
+                    // VS NIT: If a Nit bets big on a wet board, they have the straight/flush often. Fold bottom 2 pair.
+                    if (villainType === 'Nit' && rank === HandRank.TwoPair) return { action: 'fold' };
+
                     return Math.random() < 0.6 ? { action: 'call' } : { action: 'raise', amount: getRaiseAmount() };
                 }
                 return { action: 'raise', amount: getRaiseAmount() };
             }
-            // Value bet - 66% on wet, 33-50% on dry
-            const size = boardTexture === 'wet' ? 0.66 : 0.4;
+
+            // Value bet sizing
+            const size = (type === 'wet' || type === 'very-wet') ? 0.75 : 0.45;
             return { action: 'raise', amount: betPot(size) };
         }
 
@@ -461,7 +531,14 @@ export class BotLogic {
         if (rank === HandRank.Pair) {
             if (facingBet) {
                 if (bigBet) {
-                    if (boardTexture === 'wet') return { action: 'fold' };
+                    if (type === 'very-wet') return { action: 'fold' };
+
+                    // VS NIT: Fold Top Pair to big bets on Turn/River. They have 2-pair+.
+                    if (villainType === 'Nit' && (phase === 'turn' || phase === 'river')) return { action: 'fold' };
+
+                    // VS FISH: Call. They overvalue everything.
+                    if (villainType === 'Fish') return { action: 'call' };
+
                     return Math.random() < 0.4 ? { action: 'call' } : { action: 'fold' };
                 }
                 return { action: 'call' };
@@ -469,9 +546,28 @@ export class BotLogic {
 
             // C-bet strategy
             if (phase === 'flop') {
-                // High frequency small bet on dry boards
-                const cBetFreq = boardTexture === 'dry' ? 0.8 : 0.6;
-                const cBetSize = boardTexture === 'dry' ? 0.33 : 0.66;
+                let cBetFreq = 0.5;
+                let cBetSize = 0.5;
+
+                if (type === 'very-dry') {
+                    cBetFreq = 0.85;
+                    cBetSize = 0.33;
+                } else if (type === 'dry') {
+                    cBetFreq = 0.70;
+                    cBetSize = 0.45;
+                } else if (type === 'wet') {
+                    cBetFreq = 0.40;
+                    cBetSize = 0.66;
+                } else { // very-wet
+                    cBetFreq = 0.20;
+                    cBetSize = 0.75;
+                }
+
+                // VS NIT: C-bet frequency can be higher (they fold weak pairs)
+                if (villainType === 'Nit') cBetFreq += 0.15;
+                // VS CALLING STATION (Fish): Don't bluff, but this is value with Top Pair, so bet freq remains or increases?
+                // Actually if Fish calls everything, we MUST bet top pair for value.
+                if (villainType === 'Fish') cBetFreq = 0.95;
 
                 if (Math.random() < cBetFreq) {
                     return { action: 'raise', amount: betPot(cBetSize) };
@@ -489,60 +585,40 @@ export class BotLogic {
         // ===== WEAK (High Card, Draws) =====
         if (canCheck) {
             // Bluffing Frequency
-            const bluffFreq = inPosition ? 0.35 : 0.20; // Increased IP aggression
+            let bluffFreq = inPosition ? 0.35 : 0.20;
+
+            // Adjust bluff freq by texture
+            if (type === 'very-dry') bluffFreq += 0.15;
+            if (type === 'wet') bluffFreq -= 0.10;
+
+            // VS NIT: Bluff MORE. They fold unless hit.
+            if (villainType === 'Nit') bluffFreq += 0.20;
+
+            // VS FISH: Bluff LESS (or NEVER). They call too much.
+            if (villainType === 'Fish') bluffFreq = 0; // Pure value exploit
+
             const shouldBluff = Math.random() < bluffFreq;
 
-            if (shouldBluff && boardTexture === 'dry') {
-                return { action: 'raise', amount: betPot(0.33) }; // Cheap bluff
+            if (shouldBluff) {
+                const size = (type === 'dry' || type === 'very-dry') ? 0.33 : 0.6;
+                return { action: 'raise', amount: betPot(size) };
             }
             return { action: 'check' };
         }
 
         // Float
-        if (smallBet && inPosition && Math.random() < 0.25) {
+        if (smallBet && inPosition && Math.random() < 0.25 && villainType !== 'Fish') {
             return { action: 'call' };
         }
 
         // Semi-bluff draws
         if (phase !== 'river' && facingBet && smallBet && Math.random() < 0.2) {
-            // Raise draws sometimes
+            // VS FISH: Don't raise draws (semi-bluff), just call to hit.
+            if (villainType === 'Fish') return { action: 'call' };
             return { action: 'raise', amount: getRaiseAmount() };
         }
 
         return { action: 'fold' };
-    }
-
-    private static analyzeBoardTexture(communityCards: Card[]): 'dry' | 'wet' {
-        if (communityCards.length < 3) return 'dry';
-
-        // Check for flush draws
-        const suits = communityCards.map(c => c.suit);
-        const suitCounts = suits.reduce((acc, suit) => {
-            acc[suit] = (acc[suit] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-        const hasFlushDraw = Object.values(suitCounts).some(count => count >= 3);
-
-        // Check for straight draws (connected cards)
-        const ranks = communityCards.map(c => {
-            if (c.rank === 'A') return 14;
-            if (c.rank === 'K') return 13;
-            if (c.rank === 'Q') return 12;
-            if (c.rank === 'J') return 11;
-            if (c.rank === 'T') return 10;
-            return parseInt(c.rank);
-        }).sort((a, b) => a - b);
-
-        let hasStraightDraw = false;
-        for (let i = 0; i < ranks.length - 1; i++) {
-            if (ranks[i + 1] - ranks[i] <= 2) {
-                hasStraightDraw = true;
-                break;
-            }
-        }
-
-        // Wet board: flush draw or straight draw
-        return (hasFlushDraw || hasStraightDraw) ? 'wet' : 'dry';
     }
 
     private static evaluatePreFlop(cards: Card[]): number {
@@ -598,6 +674,92 @@ export class BotLogic {
         if (connected && high >= 6) return 2;
 
         return 1;
+    }
+
+    // ==========================================
+    // PRO STRATEGY (LAG - Loose Aggressive)
+    // ==========================================
+    // Wider preflop ranges, aggressive 3-betting, frequent semi-bluffs.
+
+    private static proPreflopDecision(
+        bot: Player,
+        game: PokerGame,
+        position: Position,
+        isShortStack: boolean,
+        isLatePosition: boolean,
+        callCost: number,
+        canCheck: boolean
+    ): { action: 'fold' | 'check' | 'call' | 'raise', amount?: number } {
+        const bb = game.state.bigBlindAmount;
+        const currentBet = game.state.currentBet;
+        const grade = this.evaluatePreFlop(bot.cards);
+        const facingRaise = currentBet > bb;
+
+        // LAGs play wider ranges, especially in late position
+        let playedGrade = grade;
+        if (isLatePosition) playedGrade += 1; // Artificially boost grade for late pos
+
+        // Use advanced logic as base, but modify behavior
+        const decision = this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
+
+        // LAG TWEAKS:
+
+        // 1. 3-Bet Bluff more often
+        if (facingRaise && decision.action === 'fold') {
+            // If hand is somewhat playable (Grade 3+) and we are in position
+            if (grade >= 3 && isLatePosition && Math.random() < 0.40) { // Increased to 40%
+                // Turn a fold into a 3-bet bluff
+                const threeBet = Math.max(game.state.minRaise, Math.floor(currentBet * 3));
+                return { action: 'raise', amount: Math.min(threeBet, bot.chips + bot.currentBet) };
+            }
+        }
+
+        // 2. Open wider from CO/BTN
+        if (!facingRaise && decision.action === 'fold' && isLatePosition) {
+            // Open ALMOST ANYTHING playable (Grade 2+)
+            if (grade >= 2) {
+                const standardOpenAmount = Math.floor(bb * 2.5);
+                return { action: 'raise', amount: Math.min(Math.max(standardOpenAmount, game.state.minRaise), bot.chips + bot.currentBet) };
+            }
+        }
+
+        return decision;
+    }
+
+    private static proPostflopDecision(
+        bot: Player,
+        game: PokerGame,
+        callCost: number,
+        canCheck: boolean,
+        pot: number,
+        isDeepStack: boolean
+    ): { action: 'fold' | 'check' | 'call' | 'raise', amount?: number } {
+        // Base decision
+        const decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
+        const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
+        const rank = handResult.rank;
+        const phase = game.state.phase;
+
+        // LAG TWEAKS:
+
+        // 1. Triple Barrel Bluff Potential (River Jam)
+        // If we have nothing but missed draw, and action is fold
+        if (phase === 'river' && decision.action === 'fold') {
+            // Only if we showed aggression previously? (Hard to track without history, but random aggression works for now)
+            if (canCheck && Math.random() < 0.15) { // 15% River bluff shove
+                const totalStack = bot.chips + bot.currentBet;
+                return { action: 'raise', amount: totalStack };
+            }
+        }
+
+        // 2. Float Flop C-bets in position with Air
+        if (phase === 'flop' && decision.action === 'fold' && callCost < pot * 0.6) {
+            if (Math.random() < 0.20) {
+                return { action: 'call' };
+            }
+        }
+
+        return decision;
     }
 
     private static isSuitedWheelAce(cards: Card[]): boolean {

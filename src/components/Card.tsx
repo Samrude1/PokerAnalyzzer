@@ -38,10 +38,10 @@ export function Card({ card, hidden, className, large, animateIn, animationDelay
         }
     }, [flipReveal, animationDelay]);
 
-    // Card sizes - Larger for better visibility
+    // Card sizes - Balanced for visibility
     const sizeClasses = large
-        ? 'w-28 h-42'   // Larger community cards
-        : 'w-20 h-30';  // Larger player cards
+        ? 'w-24 h-36'   // Community cards (slightly smaller)
+        : 'w-[5.5rem] h-32';  // Player cards (slightly larger)
 
     // Get card image path
     const getCardImage = (card: CardType) => {

@@ -94,6 +94,16 @@ export function Controls({
     const fullPot = Math.max(minRaise, callAmount + potAfterCall);
     const allIn = maxRaise;
 
+    useEffect(() => {
+        if (showSlider) {
+            console.log('--- Quick Bet Calc Debug ---');
+            console.log('minRaise:', minRaise);
+            console.log('bigBlindAmount:', bigBlindAmount);
+            console.log('threeXBB (max(minRaise, 3*BB)):', threeXBB);
+            console.log('3*BB raw:', bigBlindAmount * 3);
+        }
+    }, [showSlider, minRaise, bigBlindAmount, threeXBB]);
+
     const handleRaiseClick = () => {
         if (showSlider) {
             onRaise(raiseAmount);
@@ -165,11 +175,26 @@ export function Controls({
 
                         {/* Quick Actions Grid */}
                         <div className="grid grid-cols-5 gap-3 mb-6">
-                            <button onClick={() => handleQuickBet(threeXBB)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700">3BB</button>
-                            <button onClick={() => handleQuickBet(halfPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700">1/2 Pot</button>
-                            <button onClick={() => handleQuickBet(threeFourthsPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700">3/4 Pot</button>
-                            <button onClick={() => handleQuickBet(fullPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700">Pot</button>
-                            <button onClick={() => handleQuickBet(allIn)} className="p-3 bg-red-900/50 hover:bg-red-600 border border-red-800 text-red-100 rounded-lg text-sm font-bold transition">All-In</button>
+                            <button onClick={() => handleQuickBet(threeXBB)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700 flex flex-col items-center justify-center">
+                                <span>3BB</span>
+                                <span className="text-xs text-gray-400">${threeXBB}</span>
+                            </button>
+                            <button onClick={() => handleQuickBet(halfPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700 flex flex-col items-center justify-center">
+                                <span>1/2 Pot</span>
+                                <span className="text-xs text-gray-400">${halfPot}</span>
+                            </button>
+                            <button onClick={() => handleQuickBet(threeFourthsPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700 flex flex-col items-center justify-center">
+                                <span>3/4 Pot</span>
+                                <span className="text-xs text-gray-400">${threeFourthsPot}</span>
+                            </button>
+                            <button onClick={() => handleQuickBet(fullPot)} className="p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-bold transition border border-gray-700 flex flex-col items-center justify-center">
+                                <span>Pot</span>
+                                <span className="text-xs text-gray-400">${fullPot}</span>
+                            </button>
+                            <button onClick={() => handleQuickBet(allIn)} className="p-3 bg-red-900/50 hover:bg-red-600 border border-red-800 text-red-100 rounded-lg text-sm font-bold transition flex flex-col items-center justify-center">
+                                <span>All-In</span>
+                                <span className="text-xs text-red-300 font-mono">${allIn}</span>
+                            </button>
                         </div>
 
                         {/* Confirm / Cancel Actions */}

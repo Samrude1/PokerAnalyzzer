@@ -1,6 +1,7 @@
 import { Deck } from './Deck';
 import { HandEvaluator } from './HandEvaluator';
 import { GameState, Player, PlayerRole, Position } from './types';
+import { OpponentProfiler } from './OpponentProfiler';
 
 const POSITIONS_6MAX: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 
@@ -67,7 +68,7 @@ export class PokerGame {
             player.cards = [];
             if (player.chips > 0) {
                 player.status = 'active';
-                player.stats.handsPlayed++; // INCREMENT STATS
+                // player.stats.handsPlayed++; // Moved to OpponentProfiler.updateHandStats at end of hand
             } else {
                 player.status = 'eliminated';
                 if (!this.state.eliminatedPlayerIds.includes(player.id)) {
@@ -176,26 +177,24 @@ export class PokerGame {
             const isVPIP = action === 'call' || action === 'raise';
             const isPFR = action === 'raise';
 
-            if (isVPIP && !player.hasVPIPInHand) {
-                player.stats.vpipCount++;
-                player.hasVPIPInHand = true;
-            }
-            if (isPFR && !player.hasPFRInHand) {
-                player.stats.pfrCount++;
-                player.hasPFRInHand = true;
-            }
+            if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
+            if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
 
-            // 3-bet tracking: If facing a raise (not just blinds) and you have opportunity to 3-bet
-            const bb = this.state.bigBlindAmount;
-            const facingRaise = this.state.currentBet > bb;
-
-            // Check !player.lastAction ensures we only count the first voluntary action (avoid double counting on 4-bets)
-            if (facingRaise && !player.lastAction) {
-                // This is a 3-bet opportunity (someone raised before you)
-                player.stats.threeBetOpportunity++;
-                if (action === 'raise') {
-                    player.stats.threeBetCount++;
-                }
+            // 3-Bet Tracking
+            // A 3-bet opportunity is when facing a raise (currentBet > bigBlind)
+            const facingRaise = this.state.currentBet > this.state.bigBlindAmount;
+            if (facingRaise) { // Only track if facing a raise
+                const isThreeBet = action === 'raise';
+                OpponentProfiler.updateThreeBetStats(player, isThreeBet, true);
+            }
+        } else {
+            // Post-flop: Track Aggression Factor
+            if (action === 'raise') {
+                OpponentProfiler.updatePostFlopAction(player, 'raise');
+            } else if (action === 'call') {
+                OpponentProfiler.updatePostFlopAction(player, 'call');
+            } else if (action === 'check') {
+                // Checks don't impact AF usually, or count as passive? Standard AF doesn't count checks.
             }
         }
         // ----------------------
@@ -228,7 +227,7 @@ export class PokerGame {
                 const actualCall = Math.min(player.chips, callCost);
                 player.chips -= actualCall;
                 player.currentBet += actualCall;
-                player.stats.callsCount++; // STATS: AF Denominator
+                // player.stats.callsCount++; // Handled by OpponentProfiler
                 if (player.chips === 0) player.status = 'all-in';
                 break;
             case 'raise':
@@ -258,7 +257,7 @@ export class PokerGame {
                     const actualCall = Math.min(player.chips, callCost);
                     player.chips -= actualCall;
                     player.currentBet += actualCall;
-                    player.stats.callsCount++;
+                    // player.stats.callsCount++; // Handled by OpponentProfiler
                     if (player.chips === 0) player.status = 'all-in';
                     break;
                 }
@@ -271,8 +270,7 @@ export class PokerGame {
                 player.chips -= actualCost;
                 player.currentBet += actualCost;
 
-                // STATS: AF Numerator (Bets + Raises)
-                player.stats.raisesCount++;
+                // STATS: AF Numerator - Handled by OpponentProfiler
 
                 // Calculate actual raise size (amount ABOVE previous bet)
                 const raiseSize = player.currentBet - this.state.currentBet;
@@ -323,7 +321,19 @@ export class PokerGame {
         activePlayers.forEach(p => console.log(`  Active: ${p.name} bet=${p.currentBet} hasActed=${p.hasActed}`));
         allInPlayers.forEach(p => console.log(`  AllIn: ${p.name} bet=${p.currentBet}`));
 
-        // If only one active player and no all-ins waiting, or round complete
+        // If everyone is all-in, we need to run out the board
+        if (activePlayers.length === 0 && allInPlayers.length > 1) {
+            console.log(`[nextTurn] -> Everyone all-in, running out the board`);
+            // Check if betting round is complete first
+            const roundComplete = this.isRoundComplete();
+            if (roundComplete) {
+                this.collectBets();
+                this.nextPhase(); // This will recursively deal remaining streets
+            }
+            return;
+        }
+
+        // If only one active player and no all-ins waiting, end the hand
         if (activePlayers.length === 0 || (activePlayers.length === 1 && allInPlayers.length === 0)) {
             console.log(`[nextTurn] -> SHOWDOWN (only 1 or 0 active, no all-ins)`);
             if (this.state.phase !== 'showdown') {
@@ -374,11 +384,19 @@ export class PokerGame {
 
     private isRoundComplete(): boolean {
         const activePlayers = this.state.players.filter(p => p.status === 'active');
+        const allInPlayers = this.state.players.filter(p => p.status === 'all-in');
+
+        // Special case: Everyone is all-in (e.g., KK vs AA preflop)
+        if (activePlayers.length === 0 && allInPlayers.length > 1) {
+            console.log(`[isRoundComplete] TRUE - everyone all-in, need to run out board`);
+            return true;
+        }
 
         if (activePlayers.length === 0) {
             console.log(`[isRoundComplete] TRUE - no active players`);
             return true;
         }
+
         if (activePlayers.length === 1) {
             const allInPlayers = this.state.players.filter(p => p.status === 'all-in');
             if (allInPlayers.length > 0) {
@@ -497,10 +515,18 @@ export class PokerGame {
                     isShowdown: false,
                     winnerIds: [winner.id],
                     heroCards: [...hero.cards],
+                    heroPosition: hero.position,
                     communityCards: [...this.state.communityCards],
                     actionLog: [...this.state.currentHandLog]
                 });
             }
+
+            // End of Hand Stats Update (Fold Path)
+            this.state.players.forEach(p => {
+                if (p.status !== 'eliminated') {
+                    OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
+                }
+            });
             return;
         }
 
@@ -562,10 +588,18 @@ export class PokerGame {
                 isShowdown,
                 winnerIds: winners.map(w => w.player.id),
                 heroCards: [...hero.cards],
+                heroPosition: hero.position,
                 communityCards: [...this.state.communityCards],
                 actionLog: [...this.state.currentHandLog]
             });
         }
+
+        // End of Hand Stats Update
+        this.state.players.forEach(p => {
+            if (p.status !== 'eliminated') {
+                OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
+            }
+        });
     }
 
     private dealCommunityCards(count: number) {
