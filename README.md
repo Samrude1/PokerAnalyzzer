@@ -52,6 +52,8 @@ npm run build
 
 Open `http://localhost:5173` and enter any username to start playing.
 
+> ⚠️ **Note:** This app uses a **demo login system**—no real authentication. Just type any username (e.g., "Player1") and click Enter. Your session data is saved locally in your browser.
+
 ---
 
 ## 🛠️ Tech Stack
