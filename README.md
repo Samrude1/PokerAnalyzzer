@@ -8,7 +8,7 @@ A 6-max No-Limit Hold'em poker training simulator with intelligent AI opponents.
 
 ## � About
 
-This is a **free, open-source** poker training game where you can practice against AI opponents with distinct playing styles. The bots use position-aware strategies and adapt to your playstyle over time.
+This is a **Showcase Project** where you can practice against AI opponents with distinct playing styles. The bots use position-aware strategies and adapt to your playstyle over time.
 
 **Built with:** React 18 • TypeScript • Vite • TailwindCSS
 
@@ -99,9 +99,14 @@ This is the free portfolio version. A paid Pro version with advanced features is
 
 ---
 
-## 📜 License
+## 📜 License & Usage
 
-MIT License - Free to use and modify
+This repository is primarily a **Showcase** of my technical skills and architectural capability.
+While the code is public to demonstrate code quality:
+
+1.  **Strictly Personal:** The design, copy, and specific implementation details are tailored to my personal brand.
+2.  **No License for Reuse:** Please do not fork, copy, or deploy this site as your own portfolio or application.
+3.  **Inquiries:** For business inquiries or collaboration, please contact me via LinkedIn.
 
 ---
 
