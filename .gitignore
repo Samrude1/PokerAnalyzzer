@@ -63,3 +63,12 @@ test_output.txt
 
 # Private documentation (not for public repo)
 docs/
+
+# Reference materials (PDFs, private notes)
+Reference/
+
+# Agent configuration (local AI settings)
+.agent/
+
+# Gemini brain files (AI conversation artifacts)
+.gemini/
