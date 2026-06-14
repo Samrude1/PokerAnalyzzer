@@ -537,18 +537,9 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## 📜 License & Usage
 
-<<<<<<< HEAD
-This repository is primarily a **Showcase** of my technical skills and architectural capability.
-While the code is public to demonstrate code quality:
-
-1.  **Strictly Personal:** The design, copy, and specific implementation details are tailored to my personal brand.
-2.  **No License for Reuse:** Please do not fork, copy, or deploy this site as your own portfolio or application.
-3.  **Inquiries:** For business inquiries or collaboration, please contact me via LinkedIn.
-=======
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 **Free to use, modify, and distribute.**
->>>>>>> 175f163 (docs: create comprehensive professional README with detailed architecture and features)
 
 ---
 
