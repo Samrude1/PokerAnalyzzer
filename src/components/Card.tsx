@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { Card as CardType } from '../game/Deck';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface CardProps {
     card?: CardType;
@@ -19,7 +19,7 @@ const SUIT_MAP: Record<string, string> = {
     s: 'Spades',
 };
 
-export function Card({ card, hidden, className, large, animateIn, animationDelay = 0, flipReveal }: CardProps) {
+export const Card = React.memo(function Card({ card, hidden, className, large, animateIn, animationDelay = 0, flipReveal }: CardProps) {
     const [isVisible, setIsVisible] = useState(!animateIn);
     const [isFlipped, setIsFlipped] = useState(!flipReveal);
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -131,4 +131,4 @@ export function Card({ card, hidden, className, large, animateIn, animationDelay
             )}
         </div>
     );
-}
+});

@@ -34,44 +34,25 @@ export class BotLogic {
         const isLatePosition = position === 'BTN' || position === 'CO';
         const difficulty = bot.difficulty || 'advanced';
 
-        let decision;
-        if (gameState.phase === 'pre-flop') {
-            switch (difficulty) {
-                case 'beginner':
-                    decision = this.beginnerPreflopDecision(bot, game, callCost, canCheck);
-                    break;
-                case 'intermediate':
-                    decision = this.intermediatePreflopDecision(bot, game, position, callCost, canCheck);
-                    break;
-                case 'advanced':
-                    decision = this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
-                    break;
-                case 'pro':
-                    decision = this.proPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
-                    break;
-                default:
-                    decision = this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck);
-                    break;
-            }
-        } else {
-            switch (difficulty) {
-                case 'beginner':
-                    decision = this.beginnerPostflopDecision(bot, game, callCost, canCheck);
-                    break;
-                case 'intermediate':
-                    decision = this.intermediatePostflopDecision(bot, game, callCost, canCheck, pot);
-                    break;
-                case 'advanced':
-                    decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
-                    break;
-                case 'pro':
-                    decision = this.proPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
-                    break;
-                default:
-                    decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
-                    break;
-            }
-        }
+        type DecisionFunc = () => { action: 'fold' | 'check' | 'call' | 'raise', amount?: number };
+
+        const preFlopStrategies: Record<string, DecisionFunc> = {
+            'beginner': () => this.beginnerPreflopDecision(bot, game, callCost, canCheck),
+            'intermediate': () => this.intermediatePreflopDecision(bot, game, position, callCost, canCheck),
+            'advanced': () => this.advancedPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck),
+            'pro': () => this.proPreflopDecision(bot, game, position, isShortStack, isLatePosition, callCost, canCheck)
+        };
+
+        const postFlopStrategies: Record<string, DecisionFunc> = {
+            'beginner': () => this.beginnerPostflopDecision(bot, game, callCost, canCheck),
+            'intermediate': () => this.intermediatePostflopDecision(bot, game, callCost, canCheck, pot),
+            'advanced': () => this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack),
+            'pro': () => this.proPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack)
+        };
+
+        const strategyMap = gameState.phase === 'pre-flop' ? preFlopStrategies : postFlopStrategies;
+        const strategy = strategyMap[difficulty] || strategyMap['advanced'];
+        const decision = strategy();
 
         // Fix: If decision is 'call' but cost is 0, means 'check'
         if (decision.action === 'call' && callCost === 0) {

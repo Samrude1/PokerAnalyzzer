@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import clsx from 'clsx';
 import { Player } from '../game/types';
 import { Card } from './Card';
@@ -14,7 +15,6 @@ interface SeatProps {
     maxBuyIn?: number;
 }
 
-
 const POSITIONS = [
     'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0 Hero
     'bottom-0 left-2 translate-y-8', // 1 - further left, pushed down
@@ -24,7 +24,54 @@ const POSITIONS = [
     'bottom-0 right-2 translate-y-8', // 5 - further right, pushed down
 ];
 
-export function Seat({ player, position, isHero, activePlayerId, showCards, isDealer, animateCards, onBuyIn, maxBuyIn = 200 }: SeatProps) {
+const getActionColor = (action: string) => {
+    if (action === 'fold') return 'bg-red-600/90';
+    if (action === 'raise' || action === 'bet') return 'bg-poker-gold/90 text-black';
+    if (action === 'call') return 'bg-blue-600/90';
+    if (action === 'check') return 'bg-gray-600/90';
+    return 'bg-gray-700/90';
+};
+
+export const Seat = React.memo(function Seat({ 
+    player, 
+    position, 
+    isHero, 
+    activePlayerId, 
+    showCards, 
+    isDealer, 
+    animateCards, 
+    onBuyIn, 
+    maxBuyIn = 200 
+}: SeatProps) {
+    
+    // Memoize the stats calculations
+    const stats = useMemo(() => {
+        if (!player || player.status === 'eliminated') return null;
+        const h = player.stats.handsPlayed;
+        const vpip = h > 0 ? Math.round((player.stats.vpipCount / h) * 100) : 0;
+        const pfr = h > 0 ? Math.round((player.stats.pfrCount / h) * 100) : 0;
+        const threeBet = player.stats.threeBetOpportunity > 0
+            ? ((player.stats.threeBetCount / player.stats.threeBetOpportunity) * 100).toFixed(1)
+            : '0.0';
+        
+        const af = player.stats.af.toFixed(1);
+        const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / h) * 100) : 0;
+        const wsd = player.stats.showdownsReached > 0 ? Math.round((player.stats.showdownsWon / player.stats.showdownsReached) * 100) : 0;
+        
+        return {
+            hands: h,
+            vpip,
+            vpipColor: vpip > 40 ? 'text-green-400' : vpip < 15 ? 'text-red-400' : 'text-gray-300',
+            pfr,
+            threeBet,
+            af,
+            wtsd,
+            wsd,
+            sessionPnL: player.stats.sessionPnL,
+            pnlColor: player.stats.sessionPnL >= 0 ? 'text-green-400' : 'text-red-400'
+        };
+    }, [player?.stats, player?.status]);
+
     if (!player) {
         return (
             <div className={clsx(
@@ -39,14 +86,6 @@ export function Seat({ player, position, isHero, activePlayerId, showCards, isDe
     }
 
     const isActive = player.id === activePlayerId;
-
-    const getActionColor = (action: string) => {
-        if (action === 'fold') return 'bg-red-600/90';
-        if (action === 'raise' || action === 'bet') return 'bg-poker-gold/90 text-black';
-        if (action === 'call') return 'bg-blue-600/90';
-        if (action === 'check') return 'bg-gray-600/90';
-        return 'bg-gray-700/90';
-    };
 
     const actionText = player.lastAction === 'raise' && player.currentBet > 0
         ? `Raise $${player.currentBet}`
@@ -142,63 +181,31 @@ export function Seat({ player, position, isHero, activePlayerId, showCards, isDe
                 )}
 
                 {/* Stats Rows */}
-                {player.status !== 'eliminated' && (
+                {stats && player.status !== 'eliminated' && (
                     <div className="absolute -bottom-16 flex flex-col gap-0.5 items-center z-30">
                         {/* Row 1: VPIP | PFR | 3B */}
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
-                            {(() => {
-                                const h = player.stats.handsPlayed;
-                                const v = h > 0 ? Math.round((player.stats.vpipCount / h) * 100) : 0;
-                                const p = h > 0 ? Math.round((player.stats.pfrCount / h) * 100) : 0;
-                                const threeBet = player.stats.threeBetOpportunity > 0
-                                    ? ((player.stats.threeBetCount / player.stats.threeBetOpportunity) * 100).toFixed(1)
-                                    : '0.0';
-                                const vColor = v > 40 ? 'text-green-400' : v < 15 ? 'text-red-400' : 'text-gray-300';
-                                return (
-                                    <>
-                                        <span className={vColor} title="VPIP">V:{v}</span>
-                                        <span className="text-gray-500">|</span>
-                                        <span className="text-blue-300" title="PFR">P:{p}</span>
-                                        <span className="text-gray-500">|</span>
-                                        <span className="text-purple-300" title="3-Bet%">3B:{threeBet}</span>
-                                    </>
-                                );
-                            })()}
+                            <span className={stats.vpipColor} title="VPIP">V:{stats.vpip}</span>
+                            <span className="text-gray-500">|</span>
+                            <span className="text-blue-300" title="PFR">P:{stats.pfr}</span>
+                            <span className="text-gray-500">|</span>
+                            <span className="text-purple-300" title="3-Bet%">3B:{stats.threeBet}</span>
                         </div>
                         {/* Row 2: AF | WTSD | W$SD */}
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-[11px] font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
-                            {(() => {
-                                const h = player.stats.handsPlayed;
-                                const af = player.stats.af.toFixed(1);
-                                const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / h) * 100) : 0;
-                                const wsd = player.stats.showdownsReached > 0 ? Math.round((player.stats.showdownsWon / player.stats.showdownsReached) * 100) : 0;
-                                return (
-                                    <>
-                                        <span className="text-orange-300" title="AF">AF:{af}</span>
-                                        <span className="text-gray-500">|</span>
-                                        <span className="text-blue-200" title="WTSD">Wt:{wtsd}</span>
-                                        <span className="text-gray-500">|</span>
-                                        <span className="text-green-300" title="W$SD">W$:{wsd}</span>
-                                    </>
-                                );
-                            })()}
+                            <span className="text-orange-300" title="AF">AF:{stats.af}</span>
+                            <span className="text-gray-500">|</span>
+                            <span className="text-blue-200" title="WTSD">Wt:{stats.wtsd}</span>
+                            <span className="text-gray-500">|</span>
+                            <span className="text-green-300" title="W$SD">W$:{stats.wsd}</span>
                         </div>
                         {/* Row 3: Hands Played | Session Winnings */}
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-[11px] font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
-                            {(() => {
-                                const hands = player.stats.handsPlayed;
-                                const winnings = player.stats.sessionPnL;
-                                const winColor = winnings >= 0 ? 'text-green-400' : 'text-red-400';
-                                return (
-                                    <>
-                                        <span className="text-gray-300" title="Hands Played">H:{hands}</span>
-                                        <span className="text-gray-500">|</span>
-                                        <span className={winColor} title="Session Winnings">
-                                            {winnings >= 0 ? '+' : ''}{winnings}
-                                        </span>
-                                    </>
-                                );
-                            })()}
+                            <span className="text-gray-300" title="Hands Played">H:{stats.hands}</span>
+                            <span className="text-gray-500">|</span>
+                            <span className={stats.pnlColor} title="Session Winnings">
+                                {stats.sessionPnL >= 0 ? '+' : ''}{stats.sessionPnL}
+                            </span>
                         </div>
                     </div>
                 )}
@@ -225,4 +232,4 @@ export function Seat({ player, position, isHero, activePlayerId, showCards, isDe
             </div>
         </div>
     );
-}
+});

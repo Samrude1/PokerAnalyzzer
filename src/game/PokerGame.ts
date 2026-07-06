@@ -90,37 +90,26 @@ export class PokerGame {
         });
 
         // Find small blind and big blind (skip eliminated players)
-        const activePlayerIndices = this.state.players
-            .map((p, i) => ({ player: p, index: i }))
-            .filter(x => x.player.status === 'active')
-            .map(x => x.index);
+        const activePlayerCount = this.state.players.filter(p => p.status === 'active').length;
 
-        if (activePlayerIndices.length < 2) {
+        if (activePlayerCount < 2) {
             this.state.isGameOver = true;
             return;
         }
 
-        // Find positions relative to dealer
         const dealerPos = this.state.dealerIndex;
-        let sbIdx = -1, bbIdx = -1;
 
-        // Find SB (first active player after dealer)
-        for (let i = 1; i <= this.state.players.length; i++) {
-            const idx = (dealerPos + i) % this.state.players.length;
-            if (this.state.players[idx].status === 'active') {
-                sbIdx = idx;
-                break;
+        const getNextActive = (fromIdx: number) => {
+            for (let i = 1; i <= this.state.players.length; i++) {
+                const idx = (fromIdx + i) % this.state.players.length;
+                if (this.state.players[idx].status === 'active') return idx;
             }
-        }
+            return fromIdx;
+        };
 
-        // Find BB (first active player after SB)
-        for (let i = 1; i <= this.state.players.length; i++) {
-            const idx = (sbIdx + i) % this.state.players.length;
-            if (this.state.players[idx].status === 'active') {
-                bbIdx = idx;
-                break;
-            }
-        }
+        const sbIdx = getNextActive(dealerPos);
+        const bbIdx = getNextActive(sbIdx);
+        const utgIdx = getNextActive(bbIdx);
 
         this.postBlind(sbIdx, this.state.smallBlindAmount, 'small-blind');
         this.postBlind(bbIdx, this.state.bigBlindAmount, 'big-blind');
@@ -134,15 +123,6 @@ export class PokerGame {
             }
         });
 
-        // UTG starts pre-flop (first active player after BB)
-        let utgIdx = bbIdx;
-        for (let i = 1; i <= this.state.players.length; i++) {
-            const idx = (bbIdx + i) % this.state.players.length;
-            if (this.state.players[idx].status === 'active') {
-                utgIdx = idx;
-                break;
-            }
-        }
         this.state.activePlayerId = this.state.players[utgIdx].id;
 
         console.log(`Hand #${this.state.handNumber} started. Dealer: ${this.state.players[dealerPos].name}`);

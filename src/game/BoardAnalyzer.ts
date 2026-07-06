@@ -76,7 +76,7 @@ export class BoardAnalyzer {
 
         // Suit Score
         if (hasFlush) score += 60;
-        else if (hasFlushDraw) score += 30;
+        else if (hasFlushDraw) score += 45;
         else if (maxSuits === 2) score += 5; // 2-tone
 
         // Connectivity Score
@@ -86,7 +86,7 @@ export class BoardAnalyzer {
 
         // High Card Score (Broadways connect better with ranges)
         const broadways = ranks.filter(r => r >= 10).length;
-        score += broadways * 3;
+        score += broadways * 6;
 
         // Pair on board (Pair implies Full House potential, slightly wet but static)
         const pairCount = ranks.length - new Set(ranks).size;
@@ -99,7 +99,7 @@ export class BoardAnalyzer {
         let type: BoardTexture['type'] = 'dry';
         if (score < 20) type = 'very-dry';
         else if (score < 45) type = 'dry';
-        else if (score < 75) type = 'wet';
+        else if (score < 55) type = 'wet';
         else type = 'very-wet';
 
         return {
