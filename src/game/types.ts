@@ -6,8 +6,8 @@ export type BotDifficulty = 'beginner' | 'intermediate' | 'advanced' | 'pro';
 
 export type PlayerRole = 'dealer' | 'small-blind' | 'big-blind' | 'none';
 
-// Position names for 6-max
-export type Position = 'UTG' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB';
+// Position names (up to 9-max)
+export type Position = 'UTG' | 'UTG+1' | 'UTG+2' | 'MP' | 'HJ' | 'CO' | 'BTN' | 'SB' | 'BB';
 
 export interface PlayerStats {
     // Percentages (0-100 or ratio)
@@ -96,4 +96,29 @@ export interface GameState {
     handNumber: number; // Track how many hands have been played
     sessionHands: HandHistory[]; // Track all completed hands for session analysis
     currentHandLog: string[]; // Log of actions in the current hand
+}
+
+export interface BlindLevel {
+    level: number;
+    smallBlind: number;
+    bigBlind: number;
+    ante?: number;
+}
+
+export interface TournamentConfig {
+    startingChips: number;
+    playersCount: number;
+    handsPerLevel: number;
+    buyIn: number;
+}
+
+export interface TournamentState {
+    id: string;
+    isActive: boolean;
+    currentLevel: number;
+    totalHandsPlayed: number;
+    playersRemaining: number;
+    averageStack: number;
+    blindStructure: BlindLevel[];
+    payouts: number[];
 }

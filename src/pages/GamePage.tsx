@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PokerGame } from '../game/PokerGame';
 import { Player, BotDifficulty } from '../game/types';
 import { BotLogic } from '../game/BotLogic';
+import { TournamentManager } from '../game/TournamentManager';
 import { PokerTable } from '../components/PokerTable';
 import { Controls } from '../components/Controls';
 import { ShowdownOverlay } from '../components/ShowdownOverlay';
@@ -33,18 +34,25 @@ export const GamePage: React.FC = () => {
     const sessionId = useRef<string>(`sess_${Date.now()}`);
     const sessionStartTime = useRef<string>(new Date().toISOString());
 
+    const mode = searchParams.get('mode') as 'cash' | 'tournament' || 'cash';
     const tableType = (searchParams.get('difficulty') as TableType) || 'mixed';
+    
+    // Tournament State
+    const tournamentRef = useRef<TournamentManager | null>(null);
+    const [tournamentInfo, setTournamentInfo] = useState<any>(null);
 
     const createGame = useCallback(() => {
+        const availableDifficulties: BotDifficulty[] = ['beginner', 'intermediate', 'advanced', 'pro'];
+        const mixedDifficulties: BotDifficulty[] = Array.from({ length: 5 }, () => {
+            const randIndex = Math.floor(Math.random() * availableDifficulties.length);
+            return availableDifficulties[randIndex];
+        });
+
         const getDifficulty = (index: number): BotDifficulty => {
             if (tableType === 'mixed') {
-                if (index === 0) return 'beginner';      // 1 Fish
-                if (index === 1) return 'intermediate';  // 1 Nit
-                if (index === 2) return 'advanced';      // 1 TAG
-                if (index === 3) return 'pro';           // 1 LAG
-                return 'advanced';                       // Remainder TAG
+                return mixedDifficulties[index];
             }
-            return tableType;
+            return tableType as BotDifficulty;
         };
 
         const getBotName = (index: number, _diff: BotDifficulty): string => {
@@ -103,8 +111,21 @@ export const GamePage: React.FC = () => {
             }
         };
 
+        if (mode === 'tournament') {
+            const config = {
+                startingChips: 3000,
+                playersCount: 50,
+                handsPerLevel: 10,
+                buyIn: 100
+            };
+            const tm = new TournamentManager(hero, config, tableType);
+            tournamentRef.current = tm;
+            setTournamentInfo({ ...tm.state });
+            return tm.getHeroTable() || new PokerGame([hero]);
+        }
+
         return new PokerGame([hero, ...bots]);
-    }, [tableType, user?.name]);
+    }, [tableType, mode, user?.name]);
 
     // Initialize Game
     useEffect(() => {
@@ -214,9 +235,45 @@ export const GamePage: React.FC = () => {
         setShowShowdown(false);
 
         if (game.isGameOver()) {
-            game.state.isGameOver = true;
-            setTick(t => t + 1);
-            return;
+            if (mode === 'tournament' && tournamentRef.current) {
+                // If the table is game over in tournament, advance the tournament
+                tournamentRef.current.advanceTournament();
+                setTournamentInfo({ ...tournamentRef.current.state });
+                const nextTable = tournamentRef.current.getHeroTable();
+                
+                if (!tournamentRef.current.state.isActive) {
+                    game.state.isGameOver = true; // Tournament over
+                    setTick(t => t + 1);
+                    return;
+                } else if (nextTable) {
+                    // Hero moved tables or table continued
+                    nextTable.startNewHand();
+                    setGame(nextTable);
+                    setCountdown(AUTO_NEXT_HAND_DELAY);
+                    setTick(t => t + 1);
+                    setTimeout(() => SoundManager.playDeal(), 100);
+                    return;
+                }
+            } else {
+                game.state.isGameOver = true;
+                setTick(t => t + 1);
+                return;
+            }
+        }
+
+        if (mode === 'tournament' && tournamentRef.current) {
+            tournamentRef.current.advanceTournament();
+            setTournamentInfo({ ...tournamentRef.current.state });
+            const nextTable = tournamentRef.current.getHeroTable();
+            if (nextTable && nextTable !== game) {
+                // Rebalanced
+                setGame(nextTable);
+                nextTable.startNewHand();
+                setCountdown(AUTO_NEXT_HAND_DELAY);
+                setTick(t => t + 1);
+                setTimeout(() => SoundManager.playDeal(), 100);
+                return;
+            }
         }
 
         game.startNewHand();
@@ -260,10 +317,17 @@ export const GamePage: React.FC = () => {
                         <span>📊</span> Stats
                     </button>
                     <div className="h-6 w-px bg-gray-600 mx-2"></div>
-                    <span className="text-xs font-bold px-2 py-1 bg-gray-700 rounded text-gray-300 uppercase">{tableType}</span>
+                    <span className="text-xs font-bold px-2 py-1 bg-gray-700 rounded text-gray-300 uppercase">{mode} • {tableType}</span>
                 </div>
 
                 <div className="flex gap-6 text-sm items-center">
+                    {mode === 'tournament' && tournamentInfo && (
+                        <div className="flex gap-4 text-xs font-bold bg-gray-900 px-4 py-2 rounded border border-gray-700 text-purple-400">
+                            <div>Lvl: <span className="text-white">{tournamentInfo.currentLevel}</span></div>
+                            <div>Players: <span className="text-white">{tournamentInfo.playersRemaining}</span></div>
+                            <div>Avg: <span className="text-white">{tournamentInfo.averageStack}</span></div>
+                        </div>
+                    )}
                     <div className="text-gray-400">Blinds: <span className="text-white">${game.state.smallBlindAmount}/${game.state.bigBlindAmount}</span></div>
                     <div className="text-gray-400">Pot: <span className="text-poker-gold font-bold text-lg">${game.state.pot}</span></div>
                 </div>

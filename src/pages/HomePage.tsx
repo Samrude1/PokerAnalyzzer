@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { StorageService } from '../services/StorageService';
@@ -7,13 +7,14 @@ export const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const sessions = StorageService.getSessions(user?.id);
+    const [mode, setMode] = useState<'cash' | 'tournament'>('cash');
 
     const totalHands = sessions.reduce((acc, s) => acc + s.handsPlayed, 0);
     const totalProfit = sessions.reduce((acc, s) => acc + s.chipsWon, 0);
     const lastSession = sessions[sessions.length - 1];
 
     const startGame = (difficulty: string) => {
-        navigate(`/play?difficulty=${difficulty}`);
+        navigate(`/play?mode=${mode}&difficulty=${difficulty}`);
     };
 
     return (
@@ -50,7 +51,22 @@ export const HomePage: React.FC = () => {
                     {/* Hero Section */}
                     <div className="text-center mb-12">
                         <h1 className="text-5xl font-bold text-white mb-4">Ready to grind?</h1>
-                        <p className="text-xl text-gray-400">Select a table difficulty to start your session.</p>
+                        <p className="text-xl text-gray-400">Select a game mode and difficulty to start your session.</p>
+                        
+                        <div className="flex justify-center gap-4 mt-8">
+                            <button 
+                                onClick={() => setMode('cash')}
+                                className={`px-8 py-3 rounded-xl font-bold text-lg transition ${mode === 'cash' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                                Cash Game
+                            </button>
+                            <button 
+                                onClick={() => setMode('tournament')}
+                                className={`px-8 py-3 rounded-xl font-bold text-lg transition ${mode === 'tournament' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                                Tournament (MTT)
+                            </button>
+                        </div>
                     </div>
 
                     {/* Game Modes */}

@@ -88,7 +88,7 @@ export class OpponentProfiler {
 
     static classify(player: Player): OpponentType {
         const stats = player.stats;
-        if (!stats || stats.handsPlayed < 50) return 'Unknown'; // Need larger sample size (50 hands)
+        if (!stats || stats.handsPlayed < 15) return 'Unknown'; // Need larger sample size (15 hands)
 
         const { vpip, pfr } = stats;
 

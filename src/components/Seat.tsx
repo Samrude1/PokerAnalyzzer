@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import clsx from 'clsx';
 import { Player } from '../game/types';
 import { Card } from './Card';
@@ -13,16 +13,55 @@ interface SeatProps {
     animateCards?: boolean;
     onBuyIn?: (playerId: string) => void;
     maxBuyIn?: number;
+    totalSeats?: number;
 }
 
-const POSITIONS = [
-    'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0 Hero
-    'bottom-0 left-2 translate-y-8', // 1 - further left, pushed down
-    'top-4 left-2', // 2 - further left, closer to top
-    'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2', // 3
-    'top-4 right-2', // 4 - further right, closer to top
-    'bottom-0 right-2 translate-y-8', // 5 - further right, pushed down
-];
+const getPositions = (total: number) => {
+    if (total <= 6) {
+        return [
+            'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
+            'bottom-0 left-8 translate-y-8', // 1
+            'top-4 left-8', // 2
+            'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2', // 3
+            'top-4 right-8', // 4
+            'bottom-0 right-8 translate-y-8', // 5
+        ];
+    }
+    if (total === 7) {
+        return [
+            'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
+            'bottom-0 left-[15%] translate-y-1/2', // 1
+            'top-[25%] left-0 -translate-y-1/2', // 2
+            'top-0 left-[35%] -translate-x-1/2 -translate-y-1/2', // 3
+            'top-0 right-[35%] translate-x-1/2 -translate-y-1/2', // 4
+            'top-[25%] right-0 -translate-y-1/2', // 5
+            'bottom-0 right-[15%] translate-y-1/2', // 6
+        ];
+    }
+    if (total === 8) {
+        return [
+            'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
+            'bottom-0 left-[15%] translate-y-1/2', // 1
+            'top-1/2 -left-4 -translate-y-1/2', // 2
+            'top-0 left-[20%] -translate-x-1/2 -translate-y-1/2', // 3
+            'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2', // 4
+            'top-0 right-[20%] translate-x-1/2 -translate-y-1/2', // 5
+            'top-1/2 -right-4 -translate-y-1/2', // 6
+            'bottom-0 right-[15%] translate-y-1/2', // 7
+        ];
+    }
+    return [
+        'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
+        'bottom-0 left-[15%] translate-y-1/2', // 1
+        'top-1/2 -left-4 -translate-y-1/2', // 2
+        'top-0 left-[20%] -translate-x-1/2 -translate-y-1/2', // 3
+        'top-0 left-[40%] -translate-x-1/2 -translate-y-1/2', // 4
+        'top-0 right-[40%] translate-x-1/2 -translate-y-1/2', // 5
+        'top-0 right-[20%] translate-x-1/2 -translate-y-1/2', // 6
+        'top-1/2 -right-4 -translate-y-1/2', // 7
+        'bottom-0 right-[15%] translate-y-1/2', // 8
+    ];
+};
 
 const getActionColor = (action: string) => {
     if (action === 'fold') return 'bg-red-600/90';
@@ -41,12 +80,13 @@ export const Seat = React.memo(function Seat({
     isDealer, 
     animateCards, 
     onBuyIn, 
-    maxBuyIn = 200 
+    maxBuyIn = 200,
+    totalSeats = 6
 }: SeatProps) {
     
-    // Memoize the stats calculations
-    const stats = useMemo(() => {
-        if (!player || player.status === 'eliminated') return null;
+    // Calculate stats on every render to avoid stale data from mutated object references
+    let stats = null;
+    if (player && player.status !== 'eliminated') {
         const h = player.stats.handsPlayed;
         const vpip = h > 0 ? Math.round((player.stats.vpipCount / h) * 100) : 0;
         const pfr = h > 0 ? Math.round((player.stats.pfrCount / h) * 100) : 0;
@@ -55,10 +95,11 @@ export const Seat = React.memo(function Seat({
             : '0.0';
         
         const af = player.stats.af.toFixed(1);
-        const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / h) * 100) : 0;
+        const flopsSeenApprox = Math.max(1, player.stats.vpipCount);
+        const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / flopsSeenApprox) * 100) : 0;
         const wsd = player.stats.showdownsReached > 0 ? Math.round((player.stats.showdownsWon / player.stats.showdownsReached) * 100) : 0;
         
-        return {
+        stats = {
             hands: h,
             vpip,
             vpipColor: vpip > 40 ? 'text-green-400' : vpip < 15 ? 'text-red-400' : 'text-gray-300',
@@ -70,13 +111,13 @@ export const Seat = React.memo(function Seat({
             sessionPnL: player.stats.sessionPnL,
             pnlColor: player.stats.sessionPnL >= 0 ? 'text-green-400' : 'text-red-400'
         };
-    }, [player?.stats, player?.status]);
+    }
 
     if (!player) {
         return (
             <div className={clsx(
                 "absolute w-24 h-24 flex items-center justify-center",
-                POSITIONS[position]
+                getPositions(totalSeats)[position]
             )}>
                 <div className="px-4 py-2 bg-black/30 rounded-full border border-white/10 text-white/30 text-xs">
                     Empty
@@ -96,7 +137,7 @@ export const Seat = React.memo(function Seat({
     return (
         <div className={clsx(
             "absolute flex flex-col items-center justify-center w-40 h-40 transition-all duration-300 group",
-            POSITIONS[position],
+            getPositions(totalSeats)[position],
             player.status === 'folded' && "opacity-60"
         )}>
             {/* Turn Indicator - Pulsing ring */}
@@ -184,7 +225,7 @@ export const Seat = React.memo(function Seat({
                 {stats && player.status !== 'eliminated' && (
                     <div className="absolute -bottom-16 flex flex-col gap-0.5 items-center z-30">
                         {/* Row 1: VPIP | PFR | 3B */}
-                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
+                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-sm font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             <span className={stats.vpipColor} title="VPIP">V:{stats.vpip}</span>
                             <span className="text-gray-500">|</span>
                             <span className="text-blue-300" title="PFR">P:{stats.pfr}</span>
@@ -192,7 +233,7 @@ export const Seat = React.memo(function Seat({
                             <span className="text-purple-300" title="3-Bet%">3B:{stats.threeBet}</span>
                         </div>
                         {/* Row 2: AF | WTSD | W$SD */}
-                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-[11px] font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
+                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             <span className="text-orange-300" title="AF">AF:{stats.af}</span>
                             <span className="text-gray-500">|</span>
                             <span className="text-blue-200" title="WTSD">Wt:{stats.wtsd}</span>
@@ -200,7 +241,7 @@ export const Seat = React.memo(function Seat({
                             <span className="text-green-300" title="W$SD">W$:{stats.wsd}</span>
                         </div>
                         {/* Row 3: Hands Played | Session Winnings */}
-                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-[11px] font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
+                        <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             <span className="text-gray-300" title="Hands Played">H:{stats.hands}</span>
                             <span className="text-gray-500">|</span>
                             <span className={stats.pnlColor} title="Session Winnings">

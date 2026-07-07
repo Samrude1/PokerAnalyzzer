@@ -1,6 +1,6 @@
 # 🃏 Poker Trainer
 
-A professional-grade 6-max No-Limit Hold'em poker training simulator with intelligent AI opponents. Built as a portfolio project demonstrating advanced React, TypeScript, and game AI development skills.
+A professional-grade No-Limit Hold'em poker training simulator with intelligent AI opponents. Supports both 6-max cash games and 9-max Multi-Table Tournaments (MTT). Built as a portfolio project demonstrating advanced React, TypeScript, and game AI development skills.
 
 ![Poker Trainer Screenshot](./screenshot.png)
 
@@ -47,12 +47,13 @@ This project demonstrates:
 ## ✨ Features
 
 ### 🎮 Gameplay
-- **6-player No-Limit Hold'em** cash game simulation
+- **Cash Games & Tournaments (MTT)** simulation up to 50 players
+- **Dynamic table sizes** supporting 6-max up to 9-max seating
 - **Realistic betting mechanics** including min-raise, all-in, and side pot calculations
 - **Position-based hand ranges** (UTG tight, BTN wide)
-- **Blind structure** with automatic dealer button rotation
-- **Buy-in system** for rebuy functionality
-- **Sound effects** for immersive gameplay
+- **Blind structure** with automatic dealer button rotation and tournament blind escalation
+- **Buy-in system** for rebuy functionality (cash games)
+- **Sound effects & animations** for immersive gameplay
 
 ### 🤖 AI Opponents
 
@@ -470,25 +471,24 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 
 ## 🗺️ Roadmap
 
-### ✅ Completed (v1.1.0)
-- [x] 6-Max NLHE game engine
-- [x] Four bot difficulty levels
+### ✅ Completed (v1.3.0)
+- [x] Multi-Table Tournament (MTT) support with up to 50 players
+- [x] Dynamic seating for 6-max, 7-max, 8-max, and 9-max tables
+- [x] Stack-to-Blind Ratio (SBR) push/fold logic for AI
 - [x] Session analytics dashboard
 - [x] Hand history import (PokerStars)
 - [x] Position-based AI strategies
 - [x] Board texture analysis
 - [x] Opponent profiling
+- [x] Advanced HUD (3-Bet%, AF, WTSD, W$SD)
+- [x] Profit/loss graphs (EV, Showdown, Non-Showdown)
+- [x] Hand action log and details modal
 
-### 🔄 In Progress (v1.2.0)
-- [ ] Hand replayer with action-by-action playback
-- [ ] Advanced HUD (3-Bet%, AF, WTSD, W$SD)
+### 🔄 In Progress (v1.3.0)
 - [ ] Leak finder with automated analysis
-- [ ] Profit/loss graphs (EV, Showdown, Non-Showdown)
 - [ ] Hand database with search/filter
 
 ### 🔮 Future Plans (v2.0+)
-- [ ] Multi-table support (2-4 tables)
-- [ ] Tournament mode (MTT/SNG)
 - [ ] GTO solver integration (Rust + WebAssembly)
 - [ ] Pre-flop range charts
 - [ ] Mobile app (React Native)

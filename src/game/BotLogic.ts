@@ -52,7 +52,27 @@ export class BotLogic {
 
         const strategyMap = gameState.phase === 'pre-flop' ? preFlopStrategies : postFlopStrategies;
         const strategy = strategyMap[difficulty] || strategyMap['advanced'];
-        const decision = strategy();
+        
+        let decision = strategy();
+
+        // Push/Fold Override for short stacks preflop (SBR awareness)
+        if (gameState.phase === 'pre-flop' && stackInBBs <= 15) {
+            const grade = this.evaluatePreFlop(bot.cards);
+            const totalStack = bot.chips + bot.currentBet;
+            
+            // Basic push/fold chart approximation based on position and stack
+            let pushThreshold = 7; // Strong hands UTG
+            if (position === 'BTN' || position === 'SB' || position === 'CO') pushThreshold -= 2;
+            if (stackInBBs <= 8) pushThreshold -= 2; // Shove very wide if extremely short
+            
+            if (grade >= pushThreshold) {
+                decision = { action: 'raise', amount: totalStack };
+            } else if (callCost > 0) {
+                decision = { action: 'fold' };
+            } else {
+                decision = { action: 'check' };
+            }
+        }
 
         // Fix: If decision is 'call' but cost is 0, means 'check'
         if (decision.action === 'call' && callCost === 0) {
@@ -88,17 +108,18 @@ export class BotLogic {
         const grade = this.evaluatePreFlop(bot.cards);
         const bb = _game.state.bigBlindAmount;
 
-        // Only raises with absolute premiums (Grade 10+)
-        if (grade >= 10 && callCost < bb * 4) {
+        // Fish: Raises only with strong hands (Grade 8+)
+        if (grade >= 8 && callCost < bb * 6) {
             const minRaise = _game.state.minRaise;
             const totalStack = bot.chips + bot.currentBet;
             const raiseAmt = Math.min(Math.max(bb * 3, minRaise), totalStack);
             return { action: 'raise', amount: raiseAmt };
         }
 
-        // Limps/Calls with almost anything playable (Grade 3+)
-        if (grade >= 3) {
-            if (callCost > bb * 5) return { action: 'fold' }; // Folds to big raises
+        // Calling Station: Limps/Calls with ALMOST ANYTHING (Grade 2+) or completely random garbage 30% of the time
+        if (grade >= 2 || Math.random() < 0.3) {
+            // Willing to call raises up to 8BB, folds to massive shoves unless they have a decent hand
+            if (callCost > bb * 8 && grade < 5) return { action: 'fold' };
             return { action: 'call' };
         }
 
@@ -116,24 +137,25 @@ export class BotLogic {
         const rank = handResult.rank;
         const bb = game.state.bigBlindAmount;
 
-        // "Fit or Fold" - Call if made a pair
+        // "Calling Station" - Call if made ANY pair
         if (rank >= HandRank.Pair) {
-            // Min-raise with Two Pair+ for "value" (often bad sizing)
-            if (rank >= HandRank.TwoPair && canCheck && Math.random() < 0.5) {
+            // Min-raise occasionally with Two Pair+
+            if (rank >= HandRank.TwoPair && canCheck && Math.random() < 0.3) {
                 const minRaise = game.state.minRaise;
                 const totalStack = bot.chips + bot.currentBet;
                 return { action: 'raise', amount: Math.min(minRaise, totalStack) };
             }
-            if (callCost > bb * 10 && rank < HandRank.TwoPair) return { action: 'fold' }; // Fold weak pair to huge bet
+            // Folds weak pair only to massive overbets (e.g. 15BB+)
+            if (callCost > bb * 15 && rank < HandRank.TwoPair) return { action: 'fold' }; 
             return { action: 'call' };
         }
 
-        // Chases draws passively
-        const texture = BoardAnalyzer.analyze(game.state.communityCards);
-        if (texture.type === 'wet' && callCost < bb * 4) {
-            return { action: 'call' };
+        // Floating / passive chasing: Fish call small bets (<= 5BB) with any draw or air 40% of the time
+        if (callCost > 0 && callCost <= bb * 5) {
+            if (Math.random() < 0.4) return { action: 'call' };
         }
-
+        
+        // Also call if there is no cost and they didn't want to bet
         if (canCheck) return { action: 'check' };
         return { action: 'fold' };
     }
@@ -239,7 +261,7 @@ export class BotLogic {
         const bb = game.state.bigBlindAmount;
         const currentBet = game.state.currentBet;
         const minRaise = game.state.minRaise;
-        const grade = this.evaluatePreFlop(bot.cards);
+        let grade = this.evaluatePreFlop(bot.cards);
 
         // Check for specific bluff candidates (A2s-A5s)
         const isSuitedWheelAce = this.isSuitedWheelAce(bot.cards);
@@ -255,6 +277,13 @@ export class BotLogic {
             const raiser = game.state.players.find(p => p.currentBet === currentBet && p.id !== bot.id && p.status !== 'folded');
             if (raiser) {
                 villainType = OpponentProfiler.classify(raiser);
+                // --- RANGE-BASED THINKING MODIFIER ---
+                // Adjust our hand's relative strength based on Villain's perceived range
+                if (villainType === 'Nit') {
+                    grade -= 2; // Nit raises with tight range, our hand plays weaker
+                } else if (villainType === 'LAG' || villainType === 'Fish') {
+                    grade += 1; // Loose ranges mean our marginal hands are relatively stronger
+                }
             }
         }
 
@@ -436,13 +465,32 @@ export class BotLogic {
         const currentBet = game.state.currentBet;
         const totalStack = bot.chips + bot.currentBet;
 
-        // --- OPPONENT PROFILING ---
+        const facingBet = callCost > 0;
+        const bigBet = callCost > pot * 0.6;
+        const smallBet = callCost < pot * 0.35;
+
+        // --- OPPONENT PROFILING & RANGE ESTIMATION ---
         let villainType: 'Nit' | 'TAG' | 'LAG' | 'Fish' | 'Unknown' = 'Unknown';
-        // Simplistic assumption: Villain is the one who bet/raised if we are facing a bet
-        // If checking, villain is the remaining active player(s) - simplified to generic 'Unknown' if multiway or check
-        if (callCost > 0) {
+        let villainEstimatedRange: 'Air' | 'Weak' | 'Medium' | 'Strong' | 'Monster' | 'Unknown' = 'Unknown';
+        
+        if (facingBet) {
             const aggr = game.state.players.find(p => p.currentBet === currentBet && p.id !== bot.id);
-            if (aggr) villainType = OpponentProfiler.classify(aggr);
+            if (aggr) {
+                villainType = OpponentProfiler.classify(aggr);
+            }
+
+            // Estimate range based on bet size and villain type
+            if (villainType === 'Nit') {
+                villainEstimatedRange = bigBet ? 'Monster' : 'Strong';
+            } else if (villainType === 'Fish') {
+                villainEstimatedRange = bigBet ? 'Strong' : 'Weak'; // Fishes often bet big with value, small with draws/air
+            } else if (villainType === 'LAG') {
+                // LAGs balance big bets with bluffs and monsters
+                villainEstimatedRange = bigBet ? (Math.random() < 0.3 ? 'Air' : 'Monster') : 'Medium';
+            } else {
+                // Standard TAG / Unknown
+                villainEstimatedRange = bigBet ? 'Strong' : 'Medium';
+            }
         }
         // --------------------------
 
@@ -462,10 +510,6 @@ export class BotLogic {
         const getRaiseAmount = () => {
             return this.getRaiseToAmount(currentBet, minRaise, totalStack);
         };
-
-        const facingBet = callCost > 0;
-        const bigBet = callCost > pot * 0.6;
-        const smallBet = callCost < pot * 0.35;
 
         // Position awareness
         const position = bot.position || 'UTG';
@@ -495,8 +539,8 @@ export class BotLogic {
             if (facingBet) {
                 if (bigBet && (type === 'wet' || type === 'very-wet')) {
                     // scary board
-                    // VS NIT: If a Nit bets big on a wet board, they have the straight/flush often. Fold bottom 2 pair.
-                    if (villainType === 'Nit' && rank === HandRank.TwoPair) return { action: 'fold' };
+                    // RANGE-BASED: If Villain's range is Monster, fold bottom Two Pair
+                    if (villainEstimatedRange === 'Monster' && rank === HandRank.TwoPair) return { action: 'fold' };
 
                     return Math.random() < 0.6 ? { action: 'call' } : { action: 'raise', amount: getRaiseAmount() };
                 }
@@ -511,14 +555,16 @@ export class BotLogic {
         // ===== MEDIUM (Top Pair, Overpair) =====
         if (rank === HandRank.Pair) {
             if (facingBet) {
+                // RANGE-BASED: If Villain range is Monster, Top Pair is dead
+                if (villainEstimatedRange === 'Monster') return { action: 'fold' };
+                // If Villain range is Air or Weak, they are bluffing/valuing worse, easy call
+                if (villainEstimatedRange === 'Air' || villainEstimatedRange === 'Weak') return { action: 'call' };
+
                 if (bigBet) {
                     if (type === 'very-wet') return { action: 'fold' };
 
-                    // VS NIT: Fold Top Pair to big bets on Turn/River. They have 2-pair+.
-                    if (villainType === 'Nit' && (phase === 'turn' || phase === 'river')) return { action: 'fold' };
-
-                    // VS FISH: Call. They overvalue everything.
-                    if (villainType === 'Fish') return { action: 'call' };
+                    // If Villain range is Strong, we fold to big bets mostly
+                    if (villainEstimatedRange === 'Strong' && (phase === 'turn' || phase === 'river')) return { action: 'fold' };
 
                     return Math.random() < 0.4 ? { action: 'call' } : { action: 'fold' };
                 }
@@ -695,10 +741,10 @@ export class BotLogic {
             }
         }
 
-        // 2. Open wider from CO/BTN
-        if (!facingRaise && decision.action === 'fold' && isLatePosition) {
-            // Open ALMOST ANYTHING playable (Grade 2+)
-            if (grade >= 2) {
+        // 2. LAG Opens Wider generally
+        if (!facingRaise && decision.action === 'fold') {
+            const threshold = isLatePosition ? 2 : 4;
+            if (grade >= threshold) {
                 const standardOpenAmount = Math.floor(bb * 2.5);
                 return { action: 'raise', amount: Math.min(Math.max(standardOpenAmount, game.state.minRaise), bot.chips + bot.currentBet) };
             }
@@ -717,8 +763,6 @@ export class BotLogic {
     ): { action: 'fold' | 'check' | 'call' | 'raise', amount?: number } {
         // Base decision
         const decision = this.advancedPostflopDecision(bot, game, callCost, canCheck, pot, isDeepStack);
-        const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
-        const rank = handResult.rank;
         const phase = game.state.phase;
 
         // LAG TWEAKS:

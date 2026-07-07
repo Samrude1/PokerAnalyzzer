@@ -55,9 +55,9 @@ export function SessionDashboard({ sessionHands, hero, onClose }: SessionDashboa
     const threeBet = hero.stats.threeBetOpportunity > 0
         ? ((hero.stats.threeBetCount / hero.stats.threeBetOpportunity) * 100).toFixed(1)
         : '0.0';
-    const af = (hero.stats.raisesCount + hero.stats.betsCount) > 0
-        ? ((hero.stats.raisesCount + hero.stats.betsCount) / hero.stats.callsCount).toFixed(2)
-        : '0.00';
+    const af = hero.stats.callsCount > 0
+        ? (hero.stats.aggressionsCount / hero.stats.callsCount).toFixed(2)
+        : hero.stats.aggressionsCount > 0 ? '∞' : '0.00';
 
     const winRate = handsPlayed > 0 ? ((hero.stats.sessionPnL / handsPlayed) * 50).toFixed(1) : '0.0'; // bb/100 (simplified)
 

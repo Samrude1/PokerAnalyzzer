@@ -9,11 +9,15 @@ interface PokerTableProps {
 }
 
 export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
-    const heroIndex = gameState.players.findIndex(p => p.isHuman);
-    const rotatedPlayers = [...gameState.players];
+    // Filter out eliminated bots so they are removed from the table entirely
+    const activePlayers = gameState.players.filter(p => p.isHuman || p.status !== 'eliminated');
+    const heroIndex = activePlayers.findIndex(p => p.isHuman);
+    let rotatedPlayers = [...activePlayers];
     if (heroIndex !== -1) {
-        const hero = rotatedPlayers.splice(heroIndex, 1)[0];
-        rotatedPlayers.unshift(hero);
+        rotatedPlayers = [
+            ...activePlayers.slice(heroIndex),
+            ...activePlayers.slice(0, heroIndex)
+        ];
     }
 
     // Track hand number to trigger deal animations on new hands
@@ -42,6 +46,20 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
         }
     }, [gameState.communityCards.length]);
 
+    const getRunoutDelay = (cardIndex: number, startIndex: number) => {
+        if (cardIndex < startIndex) return 0;
+        
+        // If dealing multiple streets at once (all-in runout)
+        const dealtCount = gameState.communityCards.length - startIndex;
+        if (dealtCount > 1 && cardIndex >= 3) {
+            if (cardIndex === 3) return (startIndex < 4) ? 800 : 0; // Turn
+            if (cardIndex === 4) return (startIndex < 5) ? (startIndex < 4 ? 1600 : 800) : 0; // River
+        }
+        
+        // Normal dealing
+        return (cardIndex - startIndex) * 150;
+    };
+
     return (
         <div className="relative w-full max-w-5xl aspect-[2/1] bg-poker-felt rounded-[80px] border-[12px] border-poker-felt/50 shadow-[inset_0_0_80px_rgba(0,0,0,0.5)] flex items-center justify-center mx-auto">
             {/* Felt Texture/Logo */}
@@ -55,9 +73,8 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
                     <Card
                         key={`${gameState.handNumber}-${i}`}
                         card={card}
-                        large
-                        animateIn={i >= newCardIndex}
-                        animationDelay={i >= newCardIndex ? (i - newCardIndex) * 150 : 0}
+                        animateIn={animateCards && i >= newCardIndex}
+                        animationDelay={getRunoutDelay(i, newCardIndex)}
                     />
                 ))}
                 {Array.from({ length: 5 - gameState.communityCards.length }).map((_, i) => (
@@ -66,14 +83,13 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
             </div>
 
             {/* Pot Display - Positioned above community cards */}
-            <div className="absolute top-[12%] left-[35%] -translate-x-1/2 px-4 py-1.5 bg-black/70 rounded-full text-white font-mono border border-poker-gold/20 shadow-md backdrop-blur-sm z-40">
+            <div className="absolute top-[25%] left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/70 rounded-full text-white font-mono border border-poker-gold/20 shadow-md backdrop-blur-sm z-40">
                 <div className="text-[10px] text-gray-400 text-center uppercase tracking-wider">Pot</div>
                 <div className="text-base font-bold text-poker-gold">${gameState.pot}</div>
             </div>
 
             {/* Seats */}
-            {Array.from({ length: 6 }).map((_, i) => {
-                const player = rotatedPlayers[i];
+            {rotatedPlayers.map((player, i) => {
                 const isDealer = player
                     ? gameState.players.indexOf(player) === gameState.dealerIndex
                     : false;
@@ -97,6 +113,7 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
                         isDealer={isDealer}
                         animateCards={animateCards}
                         onBuyIn={onBuyIn}
+                        totalSeats={Math.max(6, rotatedPlayers.length)}
                     />
                 );
             })}

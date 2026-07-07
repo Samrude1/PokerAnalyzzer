@@ -2,15 +2,16 @@ import { Deck } from './Deck';
 import { HandEvaluator } from './HandEvaluator';
 import { GameState, Player, PlayerRole, Position } from './types';
 import { OpponentProfiler } from './OpponentProfiler';
-
-const POSITIONS_6MAX: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+import { BotLogic } from './BotLogic';
 
 export class PokerGame {
     state: GameState;
     private deck: Deck;
+    isTournament: boolean;
 
-    constructor(initialPlayers: Player[]) {
+    constructor(initialPlayers: Player[], isTournament: boolean = false) {
         this.deck = new Deck();
+        this.isTournament = isTournament;
         this.state = {
             id: crypto.randomUUID(),
             phase: 'pre-flop',
@@ -63,12 +64,11 @@ export class PokerGame {
         }
         this.state.dealerIndex = newDealerIdx;
 
-        // Reset players and assign positions
-        this.state.players.forEach((player, idx) => {
+        // Reset players
+        this.state.players.forEach((player) => {
             player.cards = [];
             if (player.chips > 0) {
                 player.status = 'active';
-                // player.stats.handsPlayed++; // Moved to OpponentProfiler.updateHandStats at end of hand
             } else {
                 player.status = 'eliminated';
                 if (!this.state.eliminatedPlayerIds.includes(player.id)) {
@@ -79,22 +79,35 @@ export class PokerGame {
             player.role = 'none';
             player.hasActed = false;
             player.lastAction = null;
-            // Reset hand tracking flags
             player.hasVPIPInHand = false;
             player.hasPFRInHand = false;
-            player.handContribution = 0; // Reset pot contribution for new hand
-
-            // Assign position relative to dealer
-            const positionOffset = (idx - this.state.dealerIndex + this.state.players.length) % this.state.players.length;
-            player.position = POSITIONS_6MAX[positionOffset];
+            player.handContribution = 0;
         });
 
-        // Find small blind and big blind (skip eliminated players)
-        const activePlayerCount = this.state.players.filter(p => p.status === 'active').length;
-
-        if (activePlayerCount < 2) {
+        const activeCount = this.state.players.filter(p => p.status === 'active').length;
+        if (activeCount < 2) {
             this.state.isGameOver = true;
             return;
+        }
+
+        let positions: Position[];
+        if (activeCount === 2) positions = ['BTN', 'BB'];
+        else if (activeCount === 3) positions = ['BTN', 'SB', 'BB'];
+        else if (activeCount === 4) positions = ['BTN', 'SB', 'BB', 'UTG'];
+        else if (activeCount === 5) positions = ['BTN', 'SB', 'BB', 'UTG', 'CO'];
+        else if (activeCount === 6) positions = ['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO'];
+        else if (activeCount === 7) positions = ['BTN', 'SB', 'BB', 'UTG', 'MP', 'HJ', 'CO'];
+        else if (activeCount === 8) positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'MP', 'HJ', 'CO'];
+        else positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'HJ', 'CO'];
+
+        let currentPos = 0;
+        for (let i = 0; i < this.state.players.length; i++) {
+            const idx = (this.state.dealerIndex + i) % this.state.players.length;
+            const p = this.state.players[idx];
+            if (p.status === 'active') {
+                p.position = positions[currentPos];
+                currentPos++;
+            }
         }
 
         const dealerPos = this.state.dealerIndex;
@@ -605,7 +618,41 @@ export class PokerGame {
         return this.state.players.find(p => p.id === playerId)?.position;
     }
 
+    autoPlayHand() {
+        if (this.state.isGameOver) return;
+        
+        this.startNewHand();
+
+        let failsafe = 0;
+        while (!this.state.isGameOver && (!this.state.winners || this.state.winners.length === 0) && failsafe < 500) {
+            failsafe++;
+            const activePlayer = this.state.players.find(p => p.id === this.state.activePlayerId);
+            
+            if (activePlayer && activePlayer.status === 'active') {
+                // Determine and apply bot action
+                const decision = BotLogic.decide(this, activePlayer);
+                this.handleAction(activePlayer.id, decision.action, decision.amount);
+            } else {
+                // If no active player, phase should have advanced or game ended
+                if (this.state.phase === 'showdown') {
+                    break;
+                }
+                // Check if everyone is all-in, nextTurn handles it but if it stuck here
+                const activePlayers = this.state.players.filter(p => p.status === 'active');
+                if (activePlayers.length === 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    setBlinds(smallBlind: number, bigBlind: number) {
+        this.state.smallBlindAmount = smallBlind;
+        this.state.bigBlindAmount = bigBlind;
+    }
+
     buyIn(playerId: string, amount: number) {
+        if (this.isTournament) return; // Rebuys disabled in tournaments
         const player = this.state.players.find(p => p.id === playerId);
         if (!player) return;
 

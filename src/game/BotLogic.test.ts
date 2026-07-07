@@ -29,14 +29,16 @@ const createMockGame = (
         isHuman: false,
         handContribution: 0,
         stats: {
+            vpip: 0,
+            pfr: 0,
+            af: 0,
             handsPlayed: 0,
             handsWon: 0,
             vpipCount: 0,
             pfrCount: 0,
             threeBetCount: 0,
             threeBetOpportunity: 0,
-            betsCount: 0,
-            raisesCount: 0,
+            aggressionsCount: 0,
             callsCount: 0,
             showdownsReached: 0,
             showdownsWon: 0,
@@ -60,7 +62,9 @@ const createMockGame = (
         winners: [],
         handNumber: 1,
         eliminatedPlayerIds: [],
-        isGameOver: false
+        isGameOver: false,
+        sessionHands: [],
+        currentHandLog: []
     };
 
     const game = new PokerGame([bot]);
