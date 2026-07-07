@@ -52,11 +52,14 @@ export class ShowdownResolver {
             }
 
             // End of Hand Stats Update (Fold Path)
-            state.players.forEach(p => {
-                if (p.status !== 'eliminated') {
-                    OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
-                }
-            });
+            const hasHero = state.players.some(p => p.isHuman);
+            if (hasHero) {
+                state.players.forEach(p => {
+                    if (p.status !== 'eliminated') {
+                        OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
+                    }
+                });
+            }
             return;
         }
 
@@ -125,10 +128,13 @@ export class ShowdownResolver {
         }
 
         // End of Hand Stats Update
-        state.players.forEach(p => {
-            if (p.status !== 'eliminated') {
-                OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
-            }
-        });
+        const hasHero = state.players.some(p => p.isHuman);
+        if (hasHero) {
+            state.players.forEach(p => {
+                if (p.status !== 'eliminated') {
+                    OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
+                }
+            });
+        }
     }
 }

@@ -3,15 +3,15 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 // Definitions
 export interface User {
     id: string;
-    email: string;
-    name: string;
+    username: string;
     isPro: boolean;
 }
 
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string) => Promise<void>;
+    login: (username: string, password: string) => Promise<void>;
+    register: (username: string, password: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -34,21 +34,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (email: string) => {
+    const login = async (username: string, password: string) => {
         setIsLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-        const mockUser: User = {
-            id: 'u_' + Math.random().toString(36).substr(2, 9),
-            email,
-            name: email.split('@')[0],
-            isPro: true // Grant pro status by default for beta/local
-        };
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Login failed');
+            }
 
-        setUser(mockUser);
-        localStorage.setItem('poker_user', JSON.stringify(mockUser));
-        setIsLoading(false);
+            const userData = await res.json();
+            setUser(userData);
+            localStorage.setItem('poker_user', JSON.stringify(userData));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const register = async (username: string, password: string) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Registration failed');
+            }
+
+            const userData = await res.json();
+            setUser(userData);
+            localStorage.setItem('poker_user', JSON.stringify(userData));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const logout = () => {
@@ -57,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

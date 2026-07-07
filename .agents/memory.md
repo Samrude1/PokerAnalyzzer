@@ -1,32 +1,36 @@
-# Memory — Codebase Optimization & Engine Refactoring
+# Memory — Local JSON Database & Stats Separation
 
 Last updated: 2026-07-07
 
 ## What was built
 
-- **BotLogic Strategy Pattern**: Refactored the massive `BotLogic.ts` file. Created `BotStrategy.ts` interface, extracted utilities to `BotLogicUtils.ts`, and separated logic into `BeginnerStrategy`, `IntermediateStrategy`, `AdvancedStrategy`, and `ProStrategy`.
-- **ShowdownResolver**: Extracted the complex showdown evaluation, side-pot, and stats tracking logic from `PokerGame.ts` into a dedicated `ShowdownResolver.ts` file, significantly reducing the size of the core game engine.
-- **UI Performance Tweaks**: Wrapped state derivations (`activePlayers`, `rotatedPlayers`) in `useMemo` and the deal timing logic in `useCallback` inside `PokerTable.tsx` to prevent unnecessary recalculations on re-renders.
+- **Local JSON Backend**: Created a Node.js Express server (`server/server.js`) that persists all users, sessions, and hands to a permanent `database.json` file.
+- **Registration & Auth**: Overhauled `LoginPage.tsx` and `AuthContext.tsx` to support real user registration with passwords, hitting the new local backend API.
+- **Async Storage**: Converted `StorageService.ts` from synchronous `localStorage` to async `fetch()` calls to the backend API. Updated UI components (`HomePage.tsx`, `ImportPage.tsx`) to handle async data loading.
+- **Stats Separation**: Updated `TournamentManager.ts` and `GamePage.tsx` to track `mode` (cash vs tournament). Tournaments now accurately record net profit (prize - buy-in), placement, and total players.
+- **HUD Update**: Replaced Session Profit/Loss with M-Ratio tracking in the in-game HUD.
+- **Concurrent Dev Environment**: Updated `package.json` to use `concurrently`, launching both the Vite frontend and Node backend simultaneously with `npm run dev`.
 
 ## Decisions made
 
-- **In-File Strategy Pattern**: To avoid massive import breakage and over-engineering, all four difficulty strategies were implemented as separate classes within the single `BotLogic.ts` file. A simple factory switch determines which strategy to invoke.
-- **Strict Separation**: Hand evaluation and stats generation at showdown are completely decoupled from the game loop state machine (`PokerGame.ts`), meaning future changes to payouts/stats won't break the betting logic.
+- **Database Choice**: Chose a flat `.json` file over SQLite or IndexedDB to provide extreme simplicity while solving the "browser cache clear" data loss problem.
+- **Authentication Security**: Since this is a local toy app for friends, passwords are saved in plain text in `database.json` to keep the backend extremely lightweight.
+- **UI Stats**: `HomePage.tsx` defaults to displaying Cash Game stats, but toggles to a completely different layout for Tournament stats (showing ITM% and Net Profit).
 
 ## Problems solved
 
-- Fixed strict TypeScript errors (e.g., unused variables in `BotLogic.ts`, `PokerGame.ts`, and `HandHistoryParser.ts`) that were identified during the build verification step.
-- Removed massive "Spaghetti" code branching from `PokerGame.ts` and `BotLogic.ts`, complying with the architectural standards defined in `.agents/context/code-standards.md`.
+- Fixed the `AuthContext` bug where a new random user ID was generated on every login, causing data loss.
+- Addressed `HomePage` rendering before async sessions were loaded by implementing a loading state and `useEffect`.
 
 ## Current state
 
-- The game behaves identically to the previous version but is structurally optimized.
-- The project successfully compiles with `npm run build` and has zero type errors.
+- The game is fully functional with a permanent local backend.
+- Registration works, stats are correctly separated by mode, and data persists securely on the local hard drive.
 
 ## Next session starts with
 
-- Moving on to the next major mechanic on the backlog, such as integrating **sound effects** or a **session history tracking** dashboard.
+- Implementing the next major roadmap feature, such as the **Leak finder with automated analysis** or the **Hand database with search/filter**.
 
 ## Open questions
 
-- (From previous session) Should the background simulation speed or tournament blind structure (currently 10 hands per level) be configurable by the user?
+- None at the moment.

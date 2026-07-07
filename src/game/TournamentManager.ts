@@ -176,6 +176,17 @@ export class TournamentManager {
 
         // 2. Cleanup eliminated players and Check Table Balancing
         const activePlayersCount = this.allPlayers.filter(p => p.chips > 0).length;
+
+        // Track Hero Placement if they busted or won
+        const hero = this.allPlayers.find(p => p.isHuman);
+        if (hero && hero.chips === 0 && !this.state.heroPlacement) {
+            this.state.heroPlacement = activePlayersCount + 1;
+            this.state.heroPrize = this.state.payouts[this.state.heroPlacement - 1] || 0;
+        } else if (hero && activePlayersCount === 1 && hero.chips > 0 && !this.state.heroPlacement) {
+            this.state.heroPlacement = 1;
+            this.state.heroPrize = this.state.payouts[0] || 0;
+        }
+
         if (activePlayersCount !== this.state.playersRemaining) {
             this.state.playersRemaining = activePlayersCount;
             const numTablesNeeded = Math.ceil(activePlayersCount / 9);
@@ -186,6 +197,13 @@ export class TournamentManager {
 
             if (needsRebalance) {
                 this.balanceTables();
+            } else if (currentTableCount > 1) {
+                const tableSizes = this.tables.map(t => t.state.players.filter(p => p.chips > 0).length);
+                const max = Math.max(...tableSizes);
+                const min = Math.min(...tableSizes);
+                if (max - min >= 2) {
+                    this.balanceTables();
+                }
             }
         }
 

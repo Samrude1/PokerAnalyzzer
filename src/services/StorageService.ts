@@ -1,5 +1,3 @@
-
-
 export interface SavedSession {
     id: string;
     userId: string;
@@ -7,6 +5,11 @@ export interface SavedSession {
     handsPlayed: number;
     chipsWon: number;
     difficulty: string;
+    mode?: 'cash' | 'tournament';
+    buyInAmount?: number;
+    prizeWon?: number;
+    placement?: number;
+    totalPlayers?: number;
 }
 
 export interface SavedHand {
@@ -14,62 +17,61 @@ export interface SavedHand {
     sessionId: string;
     handNumber: number;
     timestamp: string;
-    heroPosition?: string; // Stored as string to avoid circular dependency, but logically is Position
+    heroPosition?: string;
     heroCards: string[];
     boardCards: string[];
     potSize: number;
-    result: number; // Net profit/loss
+    result: number;
     actionLog: string[];
 }
 
-const STORAGE_KEYS = {
-    SESSIONS: 'poker_sessions',
-    HANDS: 'poker_hands'
-};
-
 export class StorageService {
-    static saveSession(session: SavedSession): void {
-        const sessions = this.getSessions();
-        sessions.push(session);
-        localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(sessions));
+    static async saveSession(session: SavedSession): Promise<void> {
+        try {
+            await fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(session)
+            });
+        } catch (e) {
+            console.error("Failed to save session", e);
+        }
     }
 
-    static getSessions(userId?: string): SavedSession[] {
-        const stored = localStorage.getItem(STORAGE_KEYS.SESSIONS);
-        if (!stored) return [];
+    static async getSessions(userId?: string): Promise<SavedSession[]> {
+        if (!userId) return [];
         try {
-            const sessions: SavedSession[] = JSON.parse(stored);
-            if (userId) {
-                return sessions.filter(s => s.userId === userId);
-            }
-            return sessions;
+            const res = await fetch(`/api/sessions/${userId}`);
+            if (!res.ok) throw new Error('Failed to fetch');
+            return await res.json();
         } catch (e) {
             console.error("Failed to load sessions", e);
             return [];
         }
     }
 
-    static saveHand(hand: SavedHand): void {
-        const hands = this.getHands();
-        hands.push(hand);
-        localStorage.setItem(STORAGE_KEYS.HANDS, JSON.stringify(hands));
+    static async saveHand(hand: SavedHand): Promise<void> {
+        return this.saveHands([hand]);
     }
 
-    static saveHands(newHands: SavedHand[]): void {
-        const hands = this.getHands();
-        hands.push(...newHands);
-        localStorage.setItem(STORAGE_KEYS.HANDS, JSON.stringify(hands));
-    }
-
-    static getHands(sessionId?: string): SavedHand[] {
-        const stored = localStorage.getItem(STORAGE_KEYS.HANDS);
-        if (!stored) return [];
+    static async saveHands(newHands: SavedHand[]): Promise<void> {
         try {
-            const hands: SavedHand[] = JSON.parse(stored);
-            if (sessionId) {
-                return hands.filter(h => h.sessionId === sessionId);
-            }
-            return hands;
+            await fetch('/api/hands', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ hands: newHands })
+            });
+        } catch (e) {
+            console.error("Failed to save hands", e);
+        }
+    }
+
+    static async getHands(sessionId?: string): Promise<SavedHand[]> {
+        if (!sessionId) return [];
+        try {
+            const res = await fetch(`/api/hands/${sessionId}`);
+            if (!res.ok) throw new Error('Failed to fetch');
+            return await res.json();
         } catch (e) {
             console.error("Failed to load hands", e);
             return [];
@@ -77,7 +79,6 @@ export class StorageService {
     }
 
     static clearAll(): void {
-        localStorage.removeItem(STORAGE_KEYS.SESSIONS);
-        localStorage.removeItem(STORAGE_KEYS.HANDS);
+        // Not implementing clearAll for the API to prevent accidental wipes.
     }
 }

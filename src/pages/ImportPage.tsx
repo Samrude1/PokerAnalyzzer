@@ -24,7 +24,7 @@ export const ImportPage: React.FC = () => {
         }, 100);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!result || !user) return;
 
         // Create a summary session
@@ -37,8 +37,8 @@ export const ImportPage: React.FC = () => {
             difficulty: 'Imported'
         };
 
-        StorageService.saveSession(session);
-        StorageService.saveHands(result.hands);
+        await StorageService.saveSession(session);
+        await StorageService.saveHands(result.hands);
 
         navigate('/');
     };

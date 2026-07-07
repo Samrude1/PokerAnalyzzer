@@ -28,6 +28,7 @@ export const GamePage: React.FC = () => {
     const [showShowdown, setShowShowdown] = useState(false);
     const [showDashboard, setShowDashboard] = useState(false);
     const [countdown, setCountdown] = useState(AUTO_NEXT_HAND_DELAY);
+    const [botAutoTop, setBotAutoTop] = useState(true);
     const [, setTick] = useState(0);
 
     // Session tracking
@@ -147,14 +148,35 @@ export const GamePage: React.FC = () => {
         // Save Session
         const hero = game.state.players.find(p => p.isHuman);
         if (hero && user) {
-            StorageService.saveSession({
+            let sessionData = {
                 id: sessionId.current,
                 userId: user.id,
                 date: sessionStartTime.current,
                 handsPlayed: hero.stats.handsPlayed,
                 chipsWon: hero.chips - hero.totalBuyIn,
-                difficulty: tableType
-            });
+                difficulty: tableType,
+                mode: mode
+            };
+
+            if (mode === 'tournament' && tournamentRef.current) {
+                const tm = tournamentRef.current;
+                let placement = tm.state.heroPlacement;
+                let prize = tm.state.heroPrize;
+                
+                // If they give up while alive
+                if (!placement) {
+                    placement = tm.state.playersRemaining;
+                    prize = tm.state.payouts[placement - 1] || 0;
+                }
+
+                sessionData.buyInAmount = tm.config.buyIn;
+                sessionData.prizeWon = prize;
+                sessionData.placement = placement;
+                sessionData.totalPlayers = tm.config.playersCount;
+                sessionData.chipsWon = prize - tm.config.buyIn; // In tournaments, chipsWon represents actual profit/loss
+            }
+
+            StorageService.saveSession(sessionData);
         }
 
         navigate('/');
@@ -276,6 +298,14 @@ export const GamePage: React.FC = () => {
             }
         }
 
+        if (mode === 'cash' && botAutoTop) {
+            game.state.players.forEach(p => {
+                if (!p.isHuman && p.chips < INITIAL_CHIPS) {
+                    game.buyIn(p.id, INITIAL_CHIPS);
+                }
+            });
+        }
+
         game.startNewHand();
         setCountdown(AUTO_NEXT_HAND_DELAY);
         setTick(t => t + 1);
@@ -318,6 +348,18 @@ export const GamePage: React.FC = () => {
                     </button>
                     <div className="h-6 w-px bg-gray-600 mx-2"></div>
                     <span className="text-xs font-bold px-2 py-1 bg-gray-700 rounded text-gray-300 uppercase">{mode} • {tableType}</span>
+                    
+                    {mode === 'cash' && (
+                        <label className="flex items-center gap-2 text-xs font-bold text-gray-300 ml-4 cursor-pointer select-none hover:text-white transition-colors">
+                            <input 
+                                type="checkbox" 
+                                checked={botAutoTop} 
+                                onChange={(e) => setBotAutoTop(e.target.checked)} 
+                                className="w-4 h-4 rounded bg-gray-800 border-gray-600 text-poker-gold focus:ring-poker-gold focus:ring-offset-gray-900"
+                            />
+                            Bot AutoTop
+                        </label>
+                    )}
                 </div>
 
                 <div className="flex gap-6 text-sm items-center">
@@ -337,11 +379,11 @@ export const GamePage: React.FC = () => {
             <div className="flex-1 flex items-center justify-center relative bg-black/20 p-4">
                 <PokerTable
                     gameState={game.state}
-                    onBuyIn={(playerId) => {
+                    onBuyIn={mode === 'cash' ? (playerId) => {
                         game.buyIn(playerId, INITIAL_CHIPS);
                         setTick(t => t + 1);
                         SoundManager.playChip();
-                    }}
+                    } : undefined}
                 />
             </div>
 

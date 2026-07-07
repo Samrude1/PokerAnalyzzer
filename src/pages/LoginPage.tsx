@@ -3,15 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
-    const [email, setEmail] = useState('');
-    const { login, isLoading } = useAuth();
+    const [isRegistering, setIsRegistering] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+    const { login, register, isLoading } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email) return;
-        await login(email);
-        navigate('/');
+        setErrorMsg('');
+        if (!username || !password) {
+            setErrorMsg('Username and password required');
+            return;
+        }
+
+        try {
+            if (isRegistering) {
+                await register(username, password);
+            } else {
+                await login(username, password);
+            }
+            navigate('/');
+        } catch (err: any) {
+            setErrorMsg(err.message || 'Authentication failed');
+        }
     };
 
     return (
@@ -21,35 +37,69 @@ export const LoginPage: React.FC = () => {
             <div className="z-10 w-full max-w-md p-8 bg-gray-800/80 border border-gray-700 rounded-2xl shadow-2xl backdrop-blur-sm">
                 <div className="text-center mb-8">
                     <div className="text-5xl mb-4">♠️</div>
-                    <h1 className="text-3xl font-bold text-poker-gold">Welcome Back</h1>
-                    <p className="text-gray-400">Sign in to track your progress</p>
+                    <h1 className="text-3xl font-bold text-poker-gold">
+                        {isRegistering ? 'Create Profile' : 'Welcome Back'}
+                    </h1>
+                    <p className="text-gray-400">
+                        {isRegistering ? 'Register to track your stats locally' : 'Sign in to access your stats'}
+                    </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                            Email / Username
+                        <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                            Username
                         </label>
                         <input
-                            id="email"
+                            id="username"
                             type="text"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter any username (demo)"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder="Enter username"
                             className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-500"
                         />
                     </div>
 
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                            Password
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter password"
+                            className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-white placeholder-gray-500"
+                        />
+                    </div>
+
+                    {errorMsg && (
+                        <div className="text-red-400 text-sm text-center font-bold">
+                            {errorMsg}
+                        </div>
+                    )}
+
                     <button
                         type="submit"
-                        disabled={isLoading || !email}
+                        disabled={isLoading || !username || !password}
                         className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-500/20 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? 'Signing in...' : 'Enter App'}
+                        {isLoading ? 'Processing...' : (isRegistering ? 'Register & Enter' : 'Login')}
                     </button>
 
-                    <p className="text-xs text-center text-gray-500 mt-4">
-                        Note: This is a local demo. No password needed.
+                    <p className="text-sm text-center text-gray-400 mt-4">
+                        {isRegistering ? 'Already have a profile?' : "Don't have a profile yet?"}{' '}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setIsRegistering(!isRegistering);
+                                setErrorMsg('');
+                            }}
+                            className="text-blue-400 hover:text-blue-300 font-bold transition"
+                        >
+                            {isRegistering ? 'Sign In' : 'Register'}
+                        </button>
                     </p>
                 </form>
             </div>

@@ -70,7 +70,7 @@ Four distinct bot personalities with different playing styles:
 - Position-aware pre-flop ranges
 - Board texture analysis (dry/wet boards)
 - Dynamic continuation betting
-- Opponent profiling and adaptation (50-hand sample)
+- Opponent profiling and adaptation (15-hand sample)
 - Stack-depth adjustments
 - Polarized 3-betting ranges
 - Floating and delayed c-bets
@@ -83,7 +83,7 @@ Real-time poker statistics displayed for each player:
 - **3-Bet %** (3-bet frequency)
 - **Aggression Factor** (bet/raise vs call ratio)
 - **Hands Played** counter
-- **Session Profit/Loss** tracking
+- **M-Ratio** tracking (color-coded stack health)
 - **Positional statistics** breakdown
 
 ### 📥 Hand History Import
@@ -101,6 +101,12 @@ Real-time poker statistics displayed for each player:
 - **Positional statistics** table
 - **Export functionality** for session data
 
+### 💾 Local JSON Database
+
+- **Local Node.js Server**: Built-in Express backend runs alongside the game.
+- **Persistent Storage**: All player stats, hands, and sessions are safely saved to `server/database.json`.
+- **User Registration**: Secure local profiles with passwords so friends can play on the same machine without mixing up their stats.
+
 ---
 
 ## 🛠️ Tech Stack
@@ -112,6 +118,10 @@ Real-time poker statistics displayed for each player:
 - **TailwindCSS 3.4** - Utility-first styling
 - **Recharts 3.5** - Data visualization
 
+### Backend & Database
+- **Node.js** & **Express** - Local API server
+- **fs (File System)** - JSON database persistence (`database.json`)
+
 ### Build Tools
 - **Vite 5.0** - Lightning-fast build tool
 - **ESLint 8.55** - Code linting
@@ -120,7 +130,7 @@ Real-time poker statistics displayed for each player:
 
 ### State Management
 - **React Context API** - Global state (Auth, Game)
-- **LocalStorage** - Session persistence
+- **API Fetch** - Async communication with local backend
 - **Custom hooks** - Reusable logic
 
 ### Utilities
@@ -155,7 +165,7 @@ The app will be available at `http://localhost:5173`
 ### Available Scripts
 
 ```bash
-# Development server with hot reload
+# Development server (Starts BOTH React and Node.js backend concurrently)
 npm run dev
 
 # Build for production
@@ -174,7 +184,7 @@ npm run lint
 ### First-Time Setup
 
 1. Open `http://localhost:5173` in your browser
-2. Enter any username (no authentication required)
+2. Click **Register** on the login screen to create a new profile with a password.
 3. Select a table type:
    - **Beginner** - All Fish bots
    - **Mixed** - Variety of skill levels
@@ -182,7 +192,7 @@ npm run lint
    - **Pro** - All LAG bots
 4. Start playing!
 
-> ⚠️ **Note:** This app uses a **demo login system**—no real authentication. Just type any username (e.g., "Player1") and click Enter. Your session data is saved locally in your browser's LocalStorage.
+> ⚠️ **Note:** The data is saved locally on your computer inside `server/database.json`. Your stats are safe even if you clear your browser cache!
 
 ---
 
@@ -257,6 +267,40 @@ poker-trainer/
 ---
 
 ## 🎲 Game Engine Architecture
+
+```mermaid
+graph TD
+    %% UI Layer
+    subgraph UI_Layer [React UI Layer]
+        Pages[React Pages / Components]
+        State[Game & Auth Contexts]
+        Pages <--> State
+    end
+
+    %% Logic Layer
+    subgraph Logic_Layer [Game Engine Layer]
+        Game[PokerGame.ts - State Machine]
+        Bots[BotLogic.ts - AI Engine]
+        Rules[HandEvaluator & ShowdownResolver]
+        TM[TournamentManager.ts]
+        
+        State -->|Triggers Actions| Game
+        Game <-->|Requests Moves| Bots
+        Game -->|Calculates| Rules
+        TM -->|Manages Tables| Game
+    end
+
+    %% Data Layer
+    subgraph Data_Layer [Data & Persistence]
+        Storage[StorageService.ts API Client]
+        Server[Local Node.js Express Server]
+        JSON[(database.json)]
+        
+        State -->|Save/Load| Storage
+        Storage <-->|HTTP fetch| Server
+        Server <-->|fs.readFile/writeFile| JSON
+    end
+```
 
 ### Core Components
 

@@ -9,10 +9,13 @@ interface PokerTableProps {
 }
 
 export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
-    // Filter out eliminated bots so they are removed from the table entirely
+    // Leave empty seats for eliminated bots instead of shrinking the table visually
     const { rotatedPlayers } = useMemo(() => {
-        const active = gameState.players.filter(p => p.isHuman || p.status !== 'eliminated');
-        const heroIndex = active.findIndex(p => p.isHuman);
+        const active = gameState.players.map(p => {
+            if (!p.isHuman && p.status === 'eliminated') return undefined;
+            return p;
+        });
+        const heroIndex = active.findIndex(p => p?.isHuman);
         let rotated = [...active];
         if (heroIndex !== -1) {
             rotated = [
@@ -117,6 +120,8 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
                         animateCards={animateCards}
                         onBuyIn={onBuyIn}
                         totalSeats={Math.max(6, rotatedPlayers.length)}
+                        smallBlind={gameState.smallBlindAmount}
+                        bigBlind={gameState.bigBlindAmount}
                     />
                 );
             })}

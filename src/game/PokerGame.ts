@@ -166,28 +166,31 @@ export class PokerGame {
         console.log(`Player ${player.name} action: ${displayAction}${raiseAmount ? ` to $${raiseAmount}` : ''}`);
         this.state.currentHandLog.push(actionDesc);
         // --- STATS TRACKING ---
-        if (this.state.phase === 'pre-flop') {
-            const isVPIP = action === 'call' || action === 'raise';
-            const isPFR = action === 'raise';
+        const hasHero = this.state.players.some(p => p.isHuman);
+        if (hasHero) {
+            if (this.state.phase === 'pre-flop') {
+                const isVPIP = action === 'call' || action === 'raise';
+                const isPFR = action === 'raise';
 
-            if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
-            if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
+                if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
+                if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
 
-            // 3-Bet Tracking
-            // A 3-bet opportunity is when facing a raise (currentBet > bigBlind)
-            const facingRaise = this.state.currentBet > this.state.bigBlindAmount;
-            if (facingRaise) { // Only track if facing a raise
-                const isThreeBet = action === 'raise';
-                OpponentProfiler.updateThreeBetStats(player, isThreeBet, true);
-            }
-        } else {
-            // Post-flop: Track Aggression Factor
-            if (action === 'raise') {
-                OpponentProfiler.updatePostFlopAction(player, 'raise');
-            } else if (action === 'call') {
-                OpponentProfiler.updatePostFlopAction(player, 'call');
-            } else if (action === 'check') {
-                // Checks don't impact AF usually, or count as passive? Standard AF doesn't count checks.
+                // 3-Bet Tracking
+                // A 3-bet opportunity is when facing a raise (currentBet > bigBlind)
+                const facingRaise = this.state.currentBet > this.state.bigBlindAmount;
+                if (facingRaise) { // Only track if facing a raise
+                    const isThreeBet = action === 'raise';
+                    OpponentProfiler.updateThreeBetStats(player, isThreeBet, true);
+                }
+            } else {
+                // Post-flop: Track Aggression Factor
+                if (action === 'raise') {
+                    OpponentProfiler.updatePostFlopAction(player, 'raise');
+                } else if (action === 'call') {
+                    OpponentProfiler.updatePostFlopAction(player, 'call');
+                } else if (action === 'check') {
+                    // Checks don't impact AF usually, or count as passive? Standard AF doesn't count checks.
+                }
             }
         }
         // ----------------------
@@ -526,16 +529,19 @@ export class PokerGame {
         this.state.bigBlindAmount = bigBlind;
     }
 
-    buyIn(playerId: string, amount: number) {
+    buyIn(playerId: string, targetAmount: number) {
         if (this.isTournament) return; // Rebuys disabled in tournaments
         const player = this.state.players.find(p => p.id === playerId);
         if (!player) return;
 
+        const amountToAdd = targetAmount - player.chips;
+        if (amountToAdd <= 0) return;
+
         // Track cumulative buy-ins for session winnings
-        player.totalBuyIn += amount;
+        player.totalBuyIn += amountToAdd;
 
         // Reset to full stack
-        player.chips = amount;
+        player.chips = targetAmount;
 
         // Remove from eliminated list
         this.state.eliminatedPlayerIds = this.state.eliminatedPlayerIds.filter(id => id !== playerId);

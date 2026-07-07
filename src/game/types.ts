@@ -121,4 +121,6 @@ export interface TournamentState {
     averageStack: number;
     blindStructure: BlindLevel[];
     payouts: number[];
+    heroPlacement?: number;
+    heroPrize?: number;
 }

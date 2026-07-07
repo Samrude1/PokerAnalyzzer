@@ -14,6 +14,8 @@ interface SeatProps {
     onBuyIn?: (playerId: string) => void;
     maxBuyIn?: number;
     totalSeats?: number;
+    smallBlind?: number;
+    bigBlind?: number;
 }
 
 const getPositions = (total: number) => {
@@ -81,7 +83,9 @@ export const Seat = React.memo(function Seat({
     animateCards, 
     onBuyIn, 
     maxBuyIn = 200,
-    totalSeats = 6
+    totalSeats = 6,
+    smallBlind,
+    bigBlind
 }: SeatProps) {
     
     // Calculate stats on every render to avoid stale data from mutated object references
@@ -99,6 +103,10 @@ export const Seat = React.memo(function Seat({
         const wtsd = h > 0 ? Math.round((player.stats.showdownsReached / flopsSeenApprox) * 100) : 0;
         const wsd = player.stats.showdownsReached > 0 ? Math.round((player.stats.showdownsWon / player.stats.showdownsReached) * 100) : 0;
         
+        const mRatio = smallBlind && bigBlind
+            ? (player.chips / (smallBlind + bigBlind)).toFixed(1)
+            : '0.0';
+
         stats = {
             hands: h,
             vpip,
@@ -108,8 +116,8 @@ export const Seat = React.memo(function Seat({
             af,
             wtsd,
             wsd,
-            sessionPnL: player.stats.sessionPnL,
-            pnlColor: player.stats.sessionPnL >= 0 ? 'text-green-400' : 'text-red-400'
+            mRatio,
+            mRatioColor: parseFloat(mRatio) >= 15 ? 'text-green-400' : parseFloat(mRatio) <= 5 ? 'text-red-400' : 'text-yellow-400'
         };
     }
 
@@ -240,12 +248,12 @@ export const Seat = React.memo(function Seat({
                             <span className="text-gray-500">|</span>
                             <span className="text-green-300" title="W$SD">W$:{stats.wsd}</span>
                         </div>
-                        {/* Row 3: Hands Played | Session Winnings */}
+                        {/* Row 3: Hands Played | M-Ratio */}
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             <span className="text-gray-300" title="Hands Played">H:{stats.hands}</span>
                             <span className="text-gray-500">|</span>
-                            <span className={stats.pnlColor} title="Session Winnings">
-                                {stats.sessionPnL >= 0 ? '+' : ''}{stats.sessionPnL}
+                            <span className={stats.mRatioColor} title="M-Ratio">
+                                M:{stats.mRatio}
                             </span>
                         </div>
                     </div>

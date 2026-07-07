@@ -1,17 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { StorageService } from '../services/StorageService';
+import { StorageService, SavedSession } from '../services/StorageService';
 
 export const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const sessions = StorageService.getSessions(user?.id);
+    const [sessions, setSessions] = useState<SavedSession[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [mode, setMode] = useState<'cash' | 'tournament'>('cash');
 
-    const totalHands = sessions.reduce((acc, s) => acc + s.handsPlayed, 0);
-    const totalProfit = sessions.reduce((acc, s) => acc + s.chipsWon, 0);
-    const lastSession = sessions[sessions.length - 1];
+    useEffect(() => {
+        const loadSessions = async () => {
+            if (user?.id) {
+                const data = await StorageService.getSessions(user.id);
+                setSessions(data);
+            }
+            setIsLoading(false);
+        };
+        loadSessions();
+    }, [user]);
+
+    const filteredSessions = sessions.filter(s => s.mode === mode || (!s.mode && mode === 'cash'));
+
+    const totalHands = filteredSessions.reduce((acc, s) => acc + s.handsPlayed, 0);
+    const totalProfit = filteredSessions.reduce((acc, s) => acc + s.chipsWon, 0);
+    const lastSession = filteredSessions[filteredSessions.length - 1];
+
+    const tournamentsPlayed = filteredSessions.length;
+    const itmCount = filteredSessions.filter(s => (s.prizeWon || 0) > 0).length;
+    const itmPercentage = tournamentsPlayed > 0 ? Math.round((itmCount / tournamentsPlayed) * 100) : 0;
 
     const startGame = (difficulty: string) => {
         navigate(`/play?mode=${mode}&difficulty=${difficulty}`);
@@ -97,29 +115,62 @@ export const HomePage: React.FC = () => {
                     </div>
 
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                            <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Total Hands</h4>
-                            <div className="text-3xl font-bold text-white">{totalHands}</div>
-                        </div>
-                        <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                            <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Total Profit</h4>
-                            <div className={`text-3xl font-bold ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {totalProfit >= 0 ? '+' : ''}{totalProfit} BB
+                    {mode === 'cash' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Total Cash Hands</h4>
+                                <div className="text-3xl font-bold text-white">{totalHands}</div>
+                            </div>
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Total Cash Profit</h4>
+                                <div className={`text-3xl font-bold ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {totalProfit >= 0 ? '+' : ''}{totalProfit}
+                                </div>
+                            </div>
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Last Session</h4>
+                                {lastSession ? (
+                                    <div>
+                                        <div className="text-xl font-bold text-white">{new Date(lastSession.date).toLocaleDateString()}</div>
+                                        <div className="text-sm text-gray-400">{lastSession.handsPlayed} hands, {lastSession.chipsWon >= 0 ? '+' : ''}{lastSession.chipsWon}</div>
+                                    </div>
+                                ) : (
+                                    <div className="text-xl text-gray-500">No sessions yet</div>
+                                )}
                             </div>
                         </div>
-                        <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                            <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Last Session</h4>
-                            {lastSession ? (
-                                <div>
-                                    <div className="text-xl font-bold text-white">{new Date(lastSession.date).toLocaleDateString()}</div>
-                                    <div className="text-sm text-gray-400">{lastSession.handsPlayed} hands, {lastSession.chipsWon} BB</div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Tournaments Played</h4>
+                                <div className="text-3xl font-bold text-white">{tournamentsPlayed}</div>
+                            </div>
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">ITM %</h4>
+                                <div className="text-3xl font-bold text-white">{itmPercentage}%</div>
+                            </div>
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Net Tournament Profit</h4>
+                                <div className={`text-3xl font-bold ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {totalProfit >= 0 ? '+' : ''}${totalProfit}
                                 </div>
-                            ) : (
-                                <div className="text-xl text-gray-500">No sessions yet</div>
-                            )}
+                            </div>
+                            <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Last Tournament</h4>
+                                {lastSession ? (
+                                    <div>
+                                        <div className="text-xl font-bold text-white">{new Date(lastSession.date).toLocaleDateString()}</div>
+                                        <div className="text-sm text-gray-400">
+                                            Place: {lastSession.placement || '-'} / {lastSession.totalPlayers || '-'} <br/>
+                                            Won: ${lastSession.prizeWon || 0}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-xl text-gray-500">No tournaments yet</div>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
