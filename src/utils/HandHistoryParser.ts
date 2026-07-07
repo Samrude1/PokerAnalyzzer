@@ -43,7 +43,6 @@ export class HandHistoryParser {
 
                 // Seat 1: Hero ($2.00 in chips) 
                 let heroSeatIndex = -1;
-                let activePlayerCount = 0;
                 // Count active players to handle non-full tables correctly if needed, 
                 // but for 6-max mapping we usually assume relative to button or fixed seats.
                 // For simplified 6-max MVP, we map relative to button assuming 6 seats.

@@ -1,8 +1,8 @@
 import { Deck } from './Deck';
-import { HandEvaluator } from './HandEvaluator';
 import { GameState, Player, PlayerRole, Position } from './types';
 import { OpponentProfiler } from './OpponentProfiler';
 import { BotLogic } from './BotLogic';
+import { ShowdownResolver } from './ShowdownResolver';
 
 export class PokerGame {
     state: GameState;
@@ -467,132 +467,7 @@ export class PokerGame {
         }
     }
     private resolveShowdown() {
-        const activePlayers = this.state.players.filter(p => p.status === 'active' || p.status === 'all-in');
-
-        if (activePlayers.length === 0) return;
-
-        if (activePlayers.length === 1) {
-            const winner = activePlayers[0];
-            winner.chips += this.state.pot;
-            winner.stats.handsWon++; // STATS
-
-            // Calculate session P/L for all players who participated in this hand
-            this.state.players.forEach(p => {
-                if (p.handContribution > 0) {
-                    const won = p.id === winner.id ? this.state.pot : 0;
-                    p.stats.sessionPnL += won - p.handContribution;
-                }
-            });
-
-            this.state.winners = [winner.id];
-            this.state.winnerInfo = {
-                playerIds: [winner.id],
-                handDescription: 'Everyone else folded',
-                potWon: this.state.pot
-            };
-            console.log(`Winner by fold: ${winner.name} wins $${this.state.pot}`);
-
-            // Track hand history for session dashboard
-            const hero = this.state.players.find(p => p.isHuman);
-            if (hero) {
-                const heroWon = hero.id === winner.id ? this.state.pot : 0;
-                const heroNetWon = heroWon - hero.handContribution;
-
-                this.state.sessionHands.push({
-                    handNumber: this.state.handNumber,
-                    heroNetWon,
-                    heroShowdownWon: 0,
-                    heroNonShowdownWon: heroNetWon,
-                    heroAllInEV: 0, // No EV calculation for fold wins
-                    finalPot: this.state.pot,
-                    isShowdown: false,
-                    winnerIds: [winner.id],
-                    heroCards: [...hero.cards],
-                    heroPosition: hero.position,
-                    communityCards: [...this.state.communityCards],
-                    actionLog: [...this.state.currentHandLog]
-                });
-            }
-
-            // End of Hand Stats Update (Fold Path)
-            this.state.players.forEach(p => {
-                if (p.status !== 'eliminated') {
-                    OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
-                }
-            });
-            return;
-        }
-
-        const results = activePlayers.map(p => ({
-            player: p,
-            hand: HandEvaluator.evaluate(p.cards, this.state.communityCards)
-        }));
-
-        // STATS: Track Showdowns Reached
-        activePlayers.forEach(p => p.stats.showdownsReached++);
-
-        results.sort((a, b) => b.hand.value - a.hand.value);
-
-        const bestValue = results[0].hand.value;
-        const winners = results.filter(r => r.hand.value === bestValue);
-
-        const splitPot = Math.floor(this.state.pot / winners.length);
-
-        winners.forEach(w => {
-            w.player.chips += splitPot;
-            w.player.stats.handsWon++; // Total Wins
-            w.player.stats.showdownsWon++; // Showdown Wins
-        });
-
-        // Calculate session P/L for all players who participated in this hand
-        // P/L = chips won - chips contributed
-        this.state.players.forEach(p => {
-            if (p.handContribution > 0) {
-                const won = winners.some(w => w.player.id === p.id) ? splitPot : 0;
-                p.stats.sessionPnL += won - p.handContribution;
-            }
-        });
-
-        this.state.winners = winners.map(w => w.player.id);
-        this.state.winnerInfo = {
-            playerIds: winners.map(w => w.player.id),
-            handDescription: results[0].hand.description,
-            potWon: this.state.pot,
-            winningCards: results[0].hand.cards
-        };
-
-        const winnerNames = winners.map(w => w.player.name).join(', ');
-        console.log(`Showdown! ${winnerNames} wins $${splitPot} with ${results[0].hand.description}`);
-
-        // Track hand history for session dashboard
-        const hero = this.state.players.find(p => p.isHuman);
-        if (hero) {
-            const heroWon = winners.some(w => w.player.id === hero.id) ? splitPot : 0;
-            const heroNetWon = heroWon - hero.handContribution;
-            const isShowdown = activePlayers.length > 1; // True showdown if multiple players
-
-            this.state.sessionHands.push({
-                handNumber: this.state.handNumber,
-                heroNetWon,
-                heroShowdownWon: isShowdown ? heroNetWon : 0,
-                heroNonShowdownWon: isShowdown ? 0 : heroNetWon,
-                heroAllInEV: 0, // TODO: Calculate EV when hero is all-in
-                finalPot: this.state.pot,
-                isShowdown,
-                winnerIds: winners.map(w => w.player.id),
-                heroCards: [...hero.cards],
-                heroPosition: hero.position,
-                communityCards: [...this.state.communityCards],
-                actionLog: [...this.state.currentHandLog]
-            });
-        }
-
-        // End of Hand Stats Update
-        this.state.players.forEach(p => {
-            if (p.status !== 'eliminated') {
-                OpponentProfiler.updateHandStats(p, !!p.hasVPIPInHand, !!p.hasPFRInHand);
-            }
-        });
+        ShowdownResolver.resolve(this.state);
     }
 
     private dealCommunityCards(count: number) {

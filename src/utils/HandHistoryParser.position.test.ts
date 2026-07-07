@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { HandHistoryParser } from './HandHistoryParser';
-import { SavedHand } from '../services/StorageService';
 
 describe('HandHistoryParser - Positional Logic', () => {
     it('should correctly identify Hero position as BTN', () => {

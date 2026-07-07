@@ -1,7 +1,7 @@
 import { GameState } from '../game/types';
 import { Seat } from './Seat';
 import { Card } from './Card';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 
 interface PokerTableProps {
     gameState: GameState;
@@ -10,15 +10,18 @@ interface PokerTableProps {
 
 export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
     // Filter out eliminated bots so they are removed from the table entirely
-    const activePlayers = gameState.players.filter(p => p.isHuman || p.status !== 'eliminated');
-    const heroIndex = activePlayers.findIndex(p => p.isHuman);
-    let rotatedPlayers = [...activePlayers];
-    if (heroIndex !== -1) {
-        rotatedPlayers = [
-            ...activePlayers.slice(heroIndex),
-            ...activePlayers.slice(0, heroIndex)
-        ];
-    }
+    const { rotatedPlayers } = useMemo(() => {
+        const active = gameState.players.filter(p => p.isHuman || p.status !== 'eliminated');
+        const heroIndex = active.findIndex(p => p.isHuman);
+        let rotated = [...active];
+        if (heroIndex !== -1) {
+            rotated = [
+                ...active.slice(heroIndex),
+                ...active.slice(0, heroIndex)
+            ];
+        }
+        return { rotatedPlayers: rotated };
+    }, [gameState.players]);
 
     // Track hand number to trigger deal animations on new hands
     const prevHandRef = useRef(gameState.handNumber);
@@ -46,7 +49,7 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
         }
     }, [gameState.communityCards.length]);
 
-    const getRunoutDelay = (cardIndex: number, startIndex: number) => {
+    const getRunoutDelay = useCallback((cardIndex: number, startIndex: number) => {
         if (cardIndex < startIndex) return 0;
         
         // If dealing multiple streets at once (all-in runout)
@@ -58,7 +61,7 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
         
         // Normal dealing
         return (cardIndex - startIndex) * 150;
-    };
+    }, [gameState.communityCards.length]);
 
     return (
         <div className="relative w-full max-w-5xl aspect-[2/1] bg-poker-felt rounded-[80px] border-[12px] border-poker-felt/50 shadow-[inset_0_0_80px_rgba(0,0,0,0.5)] flex items-center justify-center mx-auto">

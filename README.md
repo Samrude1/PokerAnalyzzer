@@ -275,10 +275,15 @@ startNewHand()           // Initialize new hand
 handleAction()           // Process player actions
 nextTurn()               // Advance to next player
 nextPhase()              // Move to next betting round
-resolveShowdown()        // Determine winners
 ```
 
-#### 2. **HandEvaluator.ts** - Hand Ranking System
+#### 2. **ShowdownResolver.ts** - Hand Resolution
+Extracted logic from the main game loop to handle showdowns:
+- **Winner determination** in multi-way pots
+- **Pot distribution** and side pots
+- **Session analytics logging**
+
+#### 3. **HandEvaluator.ts** - Hand Ranking System
 Evaluates 7-card combinations (2 hole + 5 community) to determine:
 - Hand rank (High Card → Royal Flush)
 - Kicker cards for tie-breaking
@@ -306,7 +311,7 @@ Analyzes community cards for:
 
 Used by AI to adjust betting strategies.
 
-#### 4. **Deck.ts** - Card Management
+#### 5. **Deck.ts** - Card Management
 - 52-card deck initialization
 - Fisher-Yates shuffle algorithm
 - Card dealing and tracking
@@ -317,7 +322,7 @@ Used by AI to adjust betting strategies.
 
 ### Decision-Making Architecture
 
-The `BotLogic.ts` module implements a sophisticated decision tree:
+The `BotLogic.ts` module implements a sophisticated decision tree using a **Strategy Pattern** for different difficulty levels (`BeginnerStrategy`, `IntermediateStrategy`, `AdvancedStrategy`, `ProStrategy`):
 
 ```
 decide()
