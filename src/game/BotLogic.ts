@@ -6,11 +6,20 @@ import { OpponentProfiler } from './OpponentProfiler';
 import { BotLogicUtils } from './bot/BotLogicUtils';
 import { BotStrategy, BotAction } from './bot/BotStrategy';
 
+/**
+ * Beginner Strategy (Fish profile)
+ * Plays passively. Calls too much, rarely raises, and ignores position and board texture.
+ */
 export class BeginnerStrategy implements BotStrategy {
+    /**
+     * Pre-flop decision logic for beginners.
+     * Evaluates hand grade and acts based on basic thresholds.
+     */
     decidePreFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean): BotAction {
         const grade = BotLogicUtils.evaluatePreFlop(bot.cards);
         const bb = game.state.bigBlindAmount;
 
+        // Raise only with very strong hands (grade >= 8) if the call cost is reasonable
         if (grade >= 8 && callCost < bb * 6) {
             const minRaise = game.state.minRaise;
             const totalStack = bot.chips + bot.currentBet;
@@ -18,6 +27,7 @@ export class BeginnerStrategy implements BotStrategy {
             return { action: 'raise', amount: raiseAmt };
         }
 
+        // Call with decent hands or occasionally (30% of the time) just to see a flop
         if (grade >= 2 || Math.random() < 0.3) {
             if (callCost > bb * 8 && grade < 5) return { action: 'fold' };
             return { action: 'call' };
@@ -27,11 +37,16 @@ export class BeginnerStrategy implements BotStrategy {
         return { action: 'fold' };
     }
 
+    /**
+     * Post-flop decision logic for beginners.
+     * Evaluates absolute hand strength without considering opponent ranges.
+     */
     decidePostFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean, _pot: number): BotAction {
         const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
         const rank = handResult.rank;
         const bb = game.state.bigBlindAmount;
 
+        // If holding a pair or better, tend to call or rarely raise
         if (rank >= HandRank.Pair) {
             if (rank >= HandRank.TwoPair && canCheck && Math.random() < 0.3) {
                 const minRaise = game.state.minRaise;
@@ -42,6 +57,7 @@ export class BeginnerStrategy implements BotStrategy {
             return { action: 'call' };
         }
 
+        // Call small bets occasionally even without a made hand (chasing)
         if (callCost > 0 && callCost <= bb * 5) {
             if (Math.random() < 0.4) return { action: 'call' };
         }
@@ -51,7 +67,15 @@ export class BeginnerStrategy implements BotStrategy {
     }
 }
 
+/**
+ * Intermediate Strategy (Nit profile)
+ * Plays tight-passive. Only enters the pot with premium hands. Position aware but easily bullied post-flop.
+ */
 export class IntermediateStrategy implements BotStrategy {
+    /**
+     * Pre-flop decision logic.
+     * Strictly plays strong hands based on position.
+     */
     decidePreFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean): BotAction {
         const grade = BotLogicUtils.evaluatePreFlop(bot.cards);
         const bb = game.state.bigBlindAmount;
@@ -59,15 +83,17 @@ export class IntermediateStrategy implements BotStrategy {
         const totalStack = bot.chips + bot.currentBet;
         const position = bot.position || 'UTG';
 
+        // Stricter requirements in early positions
         const threshold = (position === 'UTG' || position === 'HJ') ? 6 : 4;
 
         if (grade >= threshold) {
             const raiseAmt = Math.min(game.state.minRaise + bb, totalStack);
-            if (callCost > bb * 5 && grade < 10) return { action: 'fold' };
+            if (callCost > bb * 5 && grade < 10) return { action: 'fold' }; // Fold to heavy aggression unless premium
             if (currentBet > bb) return { action: 'call' };
             return { action: 'raise', amount: raiseAmt };
         }
 
+        // Set-mine with pocket pairs cheaply
         if (grade >= 3 && grade <= 5 && callCost < bb * 3 && BotLogicUtils.isPocketPair(bot.cards)) {
             return { action: 'call' };
         }
@@ -76,24 +102,31 @@ export class IntermediateStrategy implements BotStrategy {
         return { action: 'fold' };
     }
 
+    /**
+     * Post-flop decision logic.
+     * Plays fit-or-fold. Bets strongly when hitting the board, otherwise gives up.
+     */
     decidePostFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean, pot: number): BotAction {
         const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
         const rank = handResult.rank;
         const totalStack = bot.chips + bot.currentBet;
         const minRaise = game.state.minRaise;
 
+        // Bet strongly with two pair or better
         if (rank >= HandRank.TwoPair) {
             const betSize = Math.floor(pot * 0.75);
             const validRaise = Math.max(betSize, minRaise);
             return { action: 'raise', amount: Math.min(validRaise, totalStack) };
         }
 
+        // Play conservatively with just one pair
         if (rank === HandRank.Pair) {
             if (callCost > pot * 0.7) return { action: 'fold' };
             if (canCheck) return { action: 'check' };
             return { action: 'call' };
         }
 
+        // Opportunistic continuation bet on dry boards if checked to
         const texture = BoardAnalyzer.analyze(game.state.communityCards);
         if (canCheck && texture.type === 'dry' && Math.random() < 0.6) {
             const cBet = Math.floor(pot * 0.5);
@@ -106,7 +139,14 @@ export class IntermediateStrategy implements BotStrategy {
     }
 }
 
+/**
+ * Advanced Strategy (TAG profile - Tight Aggressive)
+ * Balances value and bluffs. Considers opponent profiles, board textures, and stack depths.
+ */
 export class AdvancedStrategy implements BotStrategy {
+    /**
+     * Sophisticated pre-flop logic handling 3-bets, 4-bets, and opponent tendencies.
+     */
     decidePreFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean): BotAction {
         const bb = game.state.bigBlindAmount;
         const currentBet = game.state.currentBet;
@@ -121,13 +161,14 @@ export class AdvancedStrategy implements BotStrategy {
         const facing3Bet = currentBet > bb * 6 && currentBet <= bb * 15;
         const facing4Bet = currentBet > bb * 15;
 
+        // Profile the opponent to adjust hand requirements
         let villainType: 'Nit' | 'TAG' | 'LAG' | 'Fish' | 'Unknown' = 'Unknown';
         if (facingRaise) {
             const raiser = game.state.players.find(p => p.currentBet === currentBet && p.id !== bot.id && p.status !== 'folded');
             if (raiser) {
                 villainType = OpponentProfiler.classify(raiser);
-                if (villainType === 'Nit') grade -= 2;
-                else if (villainType === 'LAG' || villainType === 'Fish') grade += 1;
+                if (villainType === 'Nit') grade -= 2; // Need stronger hands against Nits
+                else if (villainType === 'LAG' || villainType === 'Fish') grade += 1; // Play wider against LAGs/Fish
             }
         }
 
@@ -139,6 +180,7 @@ export class AdvancedStrategy implements BotStrategy {
         const standardOpenAmount = Math.floor(bb * openMult);
         const totalStack = bot.chips + bot.currentBet;
 
+        // Sizing helpers
         const safeRaise = (amount: number) => Math.min(Math.max(amount, minRaise), totalStack);
         const threeBetSize = (raise: number) => Math.floor(raise * (isLatePosition ? 3 : 4));
         const fourBetSize = (raise: number) => Math.floor(raise * (isLatePosition ? 2.2 : 2.5));
@@ -147,6 +189,7 @@ export class AdvancedStrategy implements BotStrategy {
             return calculated > totalStack * 0.4 ? totalStack : calculated;
         };
 
+        // Short stack adaptation (push/fold dynamics)
         const isShortStack = (bot.chips / bb) < 20;
         if (isShortStack) {
             if (grade >= 8) return { action: 'raise', amount: totalStack };
@@ -156,6 +199,7 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'fold' };
         }
 
+        // Premium hands (AA, KK, QQ, AK)
         if (grade >= 10) {
             if (facing4Bet) return { action: 'raise', amount: safeRaise(fiveBetSize(currentBet)) };
             if (facing3Bet) return { action: 'raise', amount: safeRaise(fourBetSize(currentBet)) };
@@ -163,6 +207,7 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'raise', amount: safeRaise(standardOpenAmount) };
         }
 
+        // Strong hands (JJ, TT, AQ, AJ)
         if (grade >= 7) {
             if (facing4Bet) {
                 if (grade >= 9) return { action: 'call' };
@@ -182,6 +227,7 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'raise', amount: safeRaise(standardOpenAmount) };
         }
 
+        // Marginal hands - play cautiously, mainly steal from late position
         const threshold = position === 'UTG' ? 5 : 4;
         if (grade >= threshold) {
             if (facing3Bet) return { action: 'fold' };
@@ -195,15 +241,18 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'raise', amount: safeRaise(standardOpenAmount) };
         }
 
+        // Suited wheel aces for light 3-bets from late position
         const specThreshold = isLatePosition ? 4 : 5;
         if (isSuitedWheelAce && facingRaise && !facing3Bet && villainType !== 'Nit') {
             if (isLatePosition && Math.random() < 0.4) return { action: 'raise', amount: safeRaise(threeBetSize(currentBet)) };
         }
 
+        // Speculative hands (suited connectors, small pairs)
         if (grade >= specThreshold) {
             if (facingRaise) {
                 if (villainType === 'Fish' && callCost < bb * 4) return { action: 'call' };
                 if (position === 'BB' && callCost < bb * 3) return { action: 'call' };
+                // Set mining with deep stacks
                 if (grade >= 3 && grade <= 5 && callCost < bb * 3 && bot.chips > bb * 50) return { action: 'call' };
                 return { action: 'fold' };
             }
@@ -216,6 +265,9 @@ export class AdvancedStrategy implements BotStrategy {
         return { action: 'fold' };
     }
 
+    /**
+     * Advanced post-flop logic. Handles board textures, c-bet frequencies, and pot control.
+     */
     decidePostFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean, pot: number): BotAction {
         const handResult = HandEvaluator.evaluate(bot.cards, game.state.communityCards);
         const rank = handResult.rank;
@@ -228,6 +280,7 @@ export class AdvancedStrategy implements BotStrategy {
         const bigBet = callCost > pot * 0.6;
         const smallBet = callCost < pot * 0.35;
 
+        // Estimate opponent range based on their bet sizing and profile
         let villainType: 'Nit' | 'TAG' | 'LAG' | 'Fish' | 'Unknown' = 'Unknown';
         let villainEstimatedRange: 'Air' | 'Weak' | 'Medium' | 'Strong' | 'Monster' | 'Unknown' = 'Unknown';
         
@@ -244,6 +297,7 @@ export class AdvancedStrategy implements BotStrategy {
         const texture = BoardAnalyzer.analyze(game.state.communityCards);
         const { type } = texture;
 
+        // Dynamic bet sizing based on opponent and board texture
         const betPot = (fraction: number) => {
             let mult = villainType === 'Fish' ? 1.2 : 1.0;
             const size = Math.floor(pot * fraction * mult);
@@ -255,16 +309,20 @@ export class AdvancedStrategy implements BotStrategy {
         const position = bot.position || 'UTG';
         const inPosition = position === 'BTN' || position === 'CO';
 
+        // Monster hands (Straights, Flushes, Full Houses)
         if (rank >= HandRank.Straight) {
             if (facingBet) {
+                // Trap aggressive players occasionally
                 if (villainType === 'LAG' && phase !== 'river' && Math.random() < 0.4) return { action: 'call' };
                 if (phase === 'river' && Math.random() < 0.2) return { action: 'call' };
                 return { action: 'raise', amount: getRaiseAmount() };
             }
+            // Value bet sizing depends on board wetness
             let betSize = (type === 'very-wet' || type === 'wet') ? 0.8 : (type === 'very-dry' ? 0.33 : 0.66);
             return { action: 'raise', amount: betPot(betSize) };
         }
 
+        // Strong hands (Two Pair, Sets)
         if (rank >= HandRank.TwoPair) {
             if (facingBet) {
                 if (bigBet && (type === 'wet' || type === 'very-wet')) {
@@ -277,6 +335,7 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'raise', amount: betPot(size) };
         }
 
+        // Marginal hands (One Pair)
         if (rank === HandRank.Pair) {
             if (facingBet) {
                 if (villainEstimatedRange === 'Monster') return { action: 'fold' };
@@ -289,6 +348,7 @@ export class AdvancedStrategy implements BotStrategy {
                 return { action: 'call' };
             }
 
+            // Continuation betting logic
             if (phase === 'flop') {
                 let cBetFreq = 0.5, cBetSize = 0.5;
                 if (type === 'very-dry') { cBetFreq = 0.85; cBetSize = 0.33; }
@@ -297,22 +357,24 @@ export class AdvancedStrategy implements BotStrategy {
                 else { cBetFreq = 0.20; cBetSize = 0.75; }
 
                 if (villainType === 'Nit') cBetFreq += 0.15;
-                if (villainType === 'Fish') cBetFreq = 0.95;
+                if (villainType === 'Fish') cBetFreq = 0.95; // Value bet widely against Fish
 
                 if (Math.random() < cBetFreq) return { action: 'raise', amount: betPot(cBetSize) };
                 return { action: 'check' };
             }
 
+            // Turn and River value betting
             if (Math.random() < 0.5) return { action: 'raise', amount: betPot(0.5) };
             return { action: 'check' };
         }
 
+        // Bluffs and semi-bluffs
         if (canCheck) {
             let bluffFreq = inPosition ? 0.35 : 0.20;
             if (type === 'very-dry') bluffFreq += 0.15;
             if (type === 'wet') bluffFreq -= 0.10;
-            if (villainType === 'Nit') bluffFreq += 0.20;
-            if (villainType === 'Fish') bluffFreq = 0;
+            if (villainType === 'Nit') bluffFreq += 0.20; // Attack Nits
+            if (villainType === 'Fish') bluffFreq = 0; // Don't bluff calling stations
 
             if (Math.random() < bluffFreq) {
                 const size = (type === 'dry' || type === 'very-dry') ? 0.33 : 0.6;
@@ -321,8 +383,10 @@ export class AdvancedStrategy implements BotStrategy {
             return { action: 'check' };
         }
 
+        // Float weak bets in position
         if (smallBet && inPosition && Math.random() < 0.25 && villainType !== 'Fish') return { action: 'call' };
 
+        // Exploitatively raise weak blocking bets
         if (phase !== 'river' && facingBet && smallBet && Math.random() < 0.2) {
             if (villainType === 'Fish') return { action: 'call' };
             return { action: 'raise', amount: getRaiseAmount() };
@@ -332,7 +396,14 @@ export class AdvancedStrategy implements BotStrategy {
     }
 }
 
+/**
+ * Pro Strategy (LAG profile - Loose Aggressive)
+ * Extends the Advanced Strategy with wider ranges, more aggressive 3-betting, and river bluffs.
+ */
 export class ProStrategy extends AdvancedStrategy {
+    /**
+     * Inherits from AdvancedStrategy but widens ranges and increases aggression frequencies pre-flop.
+     */
     decidePreFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean): BotAction {
         const bb = game.state.bigBlindAmount;
         const currentBet = game.state.currentBet;
@@ -343,6 +414,7 @@ export class ProStrategy extends AdvancedStrategy {
 
         const decision = super.decidePreFlop(bot, game, callCost, canCheck);
 
+        // Light 3-betting from late position
         if (facingRaise && decision.action === 'fold') {
             if (grade >= 3 && isLatePosition && Math.random() < 0.40) {
                 const threeBet = Math.max(game.state.minRaise, Math.floor(currentBet * 3));
@@ -350,6 +422,7 @@ export class ProStrategy extends AdvancedStrategy {
             }
         }
 
+        // Wider open-raising from late position
         if (!facingRaise && decision.action === 'fold') {
             const threshold = isLatePosition ? 2 : 4;
             if (grade >= threshold) {
@@ -361,17 +434,22 @@ export class ProStrategy extends AdvancedStrategy {
         return decision;
     }
 
+    /**
+     * Inherits from AdvancedStrategy but adds river bluffing and wider floating logic post-flop.
+     */
     decidePostFlop(bot: Player, game: PokerGame, callCost: number, canCheck: boolean, pot: number): BotAction {
         const decision = super.decidePostFlop(bot, game, callCost, canCheck, pot);
         const phase = game.state.phase;
 
+        // River overbet bluffs
         if (phase === 'river' && decision.action === 'fold') {
             if (canCheck && Math.random() < 0.15) {
                 const totalStack = bot.chips + bot.currentBet;
-                return { action: 'raise', amount: totalStack };
+                return { action: 'raise', amount: totalStack }; // Shove bluff
             }
         }
 
+        // Float flops wider against continuation bets
         if (phase === 'flop' && decision.action === 'fold' && callCost < pot * 0.6) {
             if (Math.random() < 0.20) return { action: 'call' };
         }
@@ -380,7 +458,15 @@ export class ProStrategy extends AdvancedStrategy {
     }
 }
 
+/**
+ * Main AI Engine dispatcher.
+ * Routes decision making to the appropriate strategy based on the bot's configured difficulty.
+ */
 export class BotLogic {
+    /**
+     * Central entry point for all AI decisions.
+     * Evaluates SBR (Stack-to-Blind Ratio) independently to enforce push/fold mechanics for short stacks.
+     */
     static decide(game: PokerGame, bot: Player): BotAction {
         const gameState = game.state;
         const currentBet = gameState.currentBet;
@@ -401,17 +487,20 @@ export class BotLogic {
                 strategy = new AdvancedStrategy(); break;
         }
 
+        // Delegate to specific phase logic
         let decision = gameState.phase === 'pre-flop' 
             ? strategy.decidePreFlop(bot, game, callCost, canCheck)
             : strategy.decidePostFlop(bot, game, callCost, canCheck, pot);
 
         // Push/Fold Override for short stacks preflop (SBR awareness)
+        // Ensures bots play optimally when mathematically committed
         const stackInBBs = bot.chips / bb;
         if (gameState.phase === 'pre-flop' && stackInBBs <= 15) {
             const grade = BotLogicUtils.evaluatePreFlop(bot.cards);
             const totalStack = bot.chips + bot.currentBet;
             const position = bot.position || 'UTG';
             
+            // Widen pushing range from late position or when extremely short
             let pushThreshold = 7;
             if (position === 'BTN' || position === 'SB' || position === 'CO') pushThreshold -= 2;
             if (stackInBBs <= 8) pushThreshold -= 2;
@@ -421,6 +510,7 @@ export class BotLogic {
             else decision = { action: 'check' };
         }
 
+        // Safety fallback: if a call is free, check instead
         if (decision.action === 'call' && callCost === 0) {
             return { action: 'check' };
         }
