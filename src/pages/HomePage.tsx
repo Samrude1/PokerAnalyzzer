@@ -48,6 +48,12 @@ export const HomePage: React.FC = () => {
                 </div>
                 <div className="flex gap-4">
                     <button
+                        onClick={() => navigate('/stats')}
+                        className="px-4 py-2 bg-poker-gold hover:bg-yellow-500 text-black rounded-lg text-sm font-bold transition flex items-center gap-2"
+                    >
+                        <span>📊</span> Statistics
+                    </button>
+                    <button
                         onClick={() => navigate('/import')}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition flex items-center gap-2"
                     >

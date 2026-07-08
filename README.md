@@ -101,10 +101,10 @@ Real-time poker statistics displayed for each player:
 - **Positional statistics** table
 - **Export functionality** for session data
 
-### 💾 Local JSON Database
+### 💾 Local Database System
 
 - **Local Node.js Server**: Built-in Express backend runs alongside the game.
-- **Persistent Storage**: All player stats, hands, and sessions are safely saved to `server/database.json`.
+- **Persistent Directory Structure**: Player stats, hands, and sessions are beautifully organized into user-friendly folders (e.g., `database/<username>/cash/sessions/<date>/sess_123.json`) for easy parsing and external analytics, replacing the old single `database.json`.
 - **User Registration**: Secure local profiles with passwords so friends can play on the same machine without mixing up their stats.
 
 ---

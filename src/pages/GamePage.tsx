@@ -177,6 +177,24 @@ export const GamePage: React.FC = () => {
             }
 
             StorageService.saveSession(sessionData);
+
+            const savedHands: import('../services/StorageService').SavedHand[] = game.state.sessionHands.map((h, index) => ({
+                id: `${sessionData.id}_hand_${index}`,
+                sessionId: sessionData.id,
+                handNumber: h.handNumber,
+                timestamp: new Date().toISOString(),
+                heroPosition: h.heroPosition,
+                heroCards: h.heroCards.map(c => `${c.rank}${c.suit}`),
+                boardCards: h.communityCards.map(c => `${c.rank}${c.suit}`),
+                potSize: h.finalPot,
+                heroNetWon: h.heroNetWon,
+                heroShowdownWon: h.heroShowdownWon,
+                heroNonShowdownWon: h.heroNonShowdownWon,
+                actionLog: h.actionLog
+            }));
+            if (savedHands.length > 0) {
+                StorageService.saveHands(savedHands);
+            }
         }
 
         navigate('/');
@@ -215,8 +233,7 @@ export const GamePage: React.FC = () => {
             setCountdown(AUTO_NEXT_HAND_DELAY);
             SoundManager.playWin();
 
-            // Save Hand to LocalStorage (optional foundation for Phase 2)
-            // We could call StorageService.saveHand(...) here
+            // Hands are saved when leaving the table.
         }
     }, [game, game?.state.phase, game?.state.winnerInfo, showShowdown]);
 

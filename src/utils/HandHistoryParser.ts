@@ -123,7 +123,9 @@ export class HandHistoryParser {
                     heroCards: heroCards,
                     boardCards: boardCards,
                     potSize: collected, // Approximate if we won, otherwise need to parse "Total pot $X"
-                    result: profit,
+                    heroNetWon: profit,
+                    heroShowdownWon: 0,
+                    heroNonShowdownWon: profit,
                     actionLog: lines.slice(0, 10), // Store first 10 lines as preview
                     heroPosition: undefined
                 };

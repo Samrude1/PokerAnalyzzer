@@ -47,7 +47,10 @@ export function PokerTable({ gameState, onBuyIn, mode }: PokerTableProps) {
 
     useEffect(() => {
         const currentCount = gameState.communityCards.length;
-        if (currentCount > prevCommunityCount.current) {
+        if (currentCount === 0) {
+            prevCommunityCount.current = 0;
+            setNewCardIndex(0);
+        } else if (currentCount > prevCommunityCount.current) {
             setNewCardIndex(prevCommunityCount.current);
             prevCommunityCount.current = currentCount;
         }
@@ -80,7 +83,7 @@ export function PokerTable({ gameState, onBuyIn, mode }: PokerTableProps) {
                     <Card
                         key={`${gameState.handNumber}-${i}`}
                         card={card}
-                        animateIn={animateCards && i >= newCardIndex}
+                        animateIn={i >= newCardIndex}
                         animationDelay={getRunoutDelay(i, newCardIndex)}
                     />
                 ))}

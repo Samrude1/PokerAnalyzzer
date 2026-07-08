@@ -21,7 +21,9 @@ export interface SavedHand {
     heroCards: string[];
     boardCards: string[];
     potSize: number;
-    result: number;
+    heroNetWon: number;
+    heroShowdownWon: number;
+    heroNonShowdownWon: number;
     actionLog: string[];
 }
 

@@ -1,0 +1,16 @@
+{
+    "session": {
+        "id": "sess_1783517921355",
+        "userId": "u_1783516976937gpwfq",
+        "date": "2026-07-08T13:38:41.355Z",
+        "handsPlayed": 36,
+        "chipsWon": -100,
+        "difficulty": "mixed",
+        "mode": "tournament",
+        "buyInAmount": 100,
+        "prizeWon": 0,
+        "placement": 42,
+        "totalPlayers": 50
+    },
+    "hands": []
+}
