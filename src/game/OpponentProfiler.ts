@@ -160,6 +160,84 @@ export class OpponentProfiler {
         }
     }
 
+    static trackAction(gameState: any, player: Player, action: 'fold' | 'check' | 'call' | 'raise') {
+        const hasHero = gameState.players.some((p: any) => p.isHuman);
+        if (!hasHero) return;
+
+        if (gameState.phase === 'pre-flop') {
+            const isVPIP = action === 'call' || action === 'raise';
+            const isPFR = action === 'raise';
+
+            if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
+            if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
+
+            const facingRaise = gameState.currentBet > gameState.bigBlindAmount;
+            if (facingRaise) {
+                if (player.facedSteal) {
+                    const foldedToSteal = action === 'fold';
+                    this.updateSteal(player, false, false, true, foldedToSteal);
+                    player.facedSteal = false;
+                }
+                
+                const isThreeBet = action === 'raise';
+                this.updateThreeBetStats(player, isThreeBet, true);
+                
+                if (isThreeBet) {
+                    gameState.players.forEach((p: any) => {
+                        if (p.id !== player.id && p.status === 'active') {
+                            p.facedThreeBet = true;
+                        }
+                    });
+                }
+            } else {
+                const isLatePosition = ['CO', 'BTN', 'SB'].includes(player.position || '');
+                const unraisedPot = !gameState.players.some((p: any) => p.id !== player.id && p.hasVPIPInHand && p.role !== 'small-blind' && p.role !== 'big-blind');
+                
+                if (isLatePosition && unraisedPot) {
+                    const isSteal = action === 'raise';
+                    this.updateSteal(player, true, isSteal, false, false);
+                    
+                    if (isSteal) {
+                        gameState.players.forEach((p: any) => {
+                            if (p.role === 'small-blind' || p.role === 'big-blind') {
+                                p.facedSteal = true;
+                            }
+                        });
+                    }
+                }
+            }
+
+            if (isPFR) {
+                gameState.players.forEach((p: any) => p.isPreflopAggressor = false);
+                player.isPreflopAggressor = true;
+            }
+        } else {
+            if (action === 'raise') {
+                this.updatePostFlopAction(player, 'raise');
+            } else if (action === 'call') {
+                this.updatePostFlopAction(player, 'call');
+            }
+            
+            if (player.isPreflopAggressor && gameState.currentBet === 0) {
+                const isCBet = action === 'raise';
+                const isCBetOpp = action === 'raise' || action === 'check';
+                
+                if (isCBetOpp && ['flop', 'turn', 'river'].includes(gameState.phase)) {
+                    this.updateCBet(player, gameState.phase as 'flop' | 'turn' | 'river', true, isCBet);
+                }
+                
+                if (action === 'check') {
+                    player.isPreflopAggressor = false;
+                }
+            }
+            
+            if (action === 'raise') {
+                gameState.players.forEach((p: any) => p.isPreflopAggressor = false);
+                player.isPreflopAggressor = true;
+            }
+        }
+    }
+
     static classify(player: Player): OpponentType {
         const stats = player.stats;
         if (!stats || stats.handsPlayed < 15) return 'Unknown'; // Need larger sample size (15 hands)

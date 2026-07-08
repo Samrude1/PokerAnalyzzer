@@ -137,8 +137,6 @@ export class PokerGame {
         });
 
         this.state.activePlayerId = this.state.players[utgIdx].id;
-
-        console.log(`Hand #${this.state.handNumber} started. Dealer: ${this.state.players[dealerPos].name}`);
     }
 
     private postBlind(playerIdx: number, amount: number, role: PlayerRole) {
@@ -163,97 +161,9 @@ export class PokerGame {
         // Format hole cards (e.g., "AhKs")
         const handStr = player.cards.map(c => `${c.rank}${c.suit}`).join('');
         const actionDesc = `${player.name} ${displayAction}s${raiseAmount ? ` $${raiseAmount}` : ''} (${handStr})`;
-        console.log(`Player ${player.name} action: ${displayAction}${raiseAmount ? ` to $${raiseAmount}` : ''}`);
         this.state.currentHandLog.push(actionDesc);
-        // --- STATS TRACKING ---
-        const hasHero = this.state.players.some(p => p.isHuman);
-        if (hasHero) {
-            if (this.state.phase === 'pre-flop') {
-                const isVPIP = action === 'call' || action === 'raise';
-                const isPFR = action === 'raise';
-
-                if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
-                if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
-
-                // 3-Bet Tracking
-                // A 3-bet opportunity is when facing a raise (currentBet > bigBlind)
-                const facingRaise = this.state.currentBet > this.state.bigBlindAmount;
-                if (facingRaise) { // Only track if facing a raise
-                    // Check Fold to Steal
-                    if (player.facedSteal) {
-                        const foldedToSteal = action === 'fold';
-                        OpponentProfiler.updateSteal(player, false, false, true, foldedToSteal);
-                        player.facedSteal = false; // Resolved
-                    }
-                    
-                    const isThreeBet = action === 'raise';
-                    OpponentProfiler.updateThreeBetStats(player, isThreeBet, true);
-                    
-                    if (isThreeBet) {
-                        // Mark everyone else as facing a 3-bet
-                        this.state.players.forEach(p => {
-                            if (p.id !== player.id && p.status === 'active') {
-                                p.facedThreeBet = true;
-                            }
-                        });
-                    }
-                } else {
-                    // Steal Opportunity Check
-                    const isLatePosition = ['CO', 'BTN', 'SB'].includes(player.position || '');
-                    // No one has VPIPed yet (limped or raised) before this player
-                    const unraisedPot = !this.state.players.some(p => p.id !== playerId && p.hasVPIPInHand && p.role !== 'small-blind' && p.role !== 'big-blind');
-                    
-                    if (isLatePosition && unraisedPot) {
-                        const isSteal = action === 'raise';
-                        OpponentProfiler.updateSteal(player, true, isSteal, false, false);
-                        
-                        if (isSteal) {
-                            // The blinds are now facing a steal
-                            this.state.players.forEach(p => {
-                                if (p.role === 'small-blind' || p.role === 'big-blind') {
-                                    p.facedSteal = true;
-                                }
-                            });
-                        }
-                    }
-                }
-
-                if (isPFR) {
-                    this.state.players.forEach(p => p.isPreflopAggressor = false);
-                    player.isPreflopAggressor = true;
-                }
-            } else {
-                // Post-flop: Track Aggression Factor
-                if (action === 'raise') {
-                    OpponentProfiler.updatePostFlopAction(player, 'raise');
-                } else if (action === 'call') {
-                    OpponentProfiler.updatePostFlopAction(player, 'call');
-                }
-                
-                // C-Bet Tracking
-                if (player.isPreflopAggressor && this.state.currentBet === 0) {
-                    const isCBet = action === 'raise';
-                    const isCBetOpp = action === 'raise' || action === 'check';
-                    
-                    if (isCBetOpp && ['flop', 'turn', 'river'].includes(this.state.phase)) {
-                        OpponentProfiler.updateCBet(player, this.state.phase as 'flop' | 'turn' | 'river', true, isCBet);
-                    }
-                    
-                    // If they didn't C-bet (checked), they lose preflop aggressor status for next streets
-                    if (action === 'check') {
-                        player.isPreflopAggressor = false;
-                    }
-                }
-                
-                // If someone else bets, they take over the aggressor role (for turn/river C-bets)
-                // Though technically a "C-Bet" is only for the preflop aggressor.
-                if (action === 'raise') {
-                    this.state.players.forEach(p => p.isPreflopAggressor = false);
-                    player.isPreflopAggressor = true;
-                }
-            }
-        }
-        // ----------------------
+        
+        OpponentProfiler.trackAction(this.state, player, action);
 
         player.lastAction = displayAction;
         player.hasActed = true;
@@ -287,80 +197,41 @@ export class PokerGame {
                 if (player.chips === 0) player.status = 'all-in';
                 break;
             case 'raise':
-                // Strict validation: Must treat undefined raiseAmount as invalid
-                if (!raiseAmount) {
-                    console.error("Raise action missing amount");
-                    return;
-                }
+                if (!raiseAmount) return;
 
-                const minRaise = this.state.minRaise;
                 const playerStack = player.chips + player.currentBet;
-
-                // Cap raise at player's max stack (All-in)
                 let validAmount = Math.min(raiseAmount, playerStack);
 
-                // Enforce minimum raise (unless all-in)
-                if (validAmount < minRaise && validAmount < playerStack) {
-                    // If they tried to raise less than min but not all-in, force min-raise
-                    // Or if they can't afford min-raise, force all-in
-                    validAmount = Math.min(minRaise, playerStack);
+                if (validAmount < this.state.minRaise && validAmount < playerStack) {
+                    validAmount = Math.min(this.state.minRaise, playerStack);
                 }
 
-                // If the "raise" is just a call or less (e.g. invalid logic), assume call
                 if (validAmount <= this.state.currentBet) {
-                    // Fallback to call logic
                     const callCost = this.state.currentBet - player.currentBet;
                     const actualCall = Math.min(player.chips, callCost);
                     player.chips -= actualCall;
                     player.currentBet += actualCall;
-                    // player.stats.callsCount++; // Handled by OpponentProfiler
                     if (player.chips === 0) player.status = 'all-in';
                     break;
                 }
 
-                // Apply the valid raise
-                const totalBet = validAmount;
-                const cost = totalBet - player.currentBet;
-                const actualCost = Math.min(player.chips, cost);
+                const cost = validAmount - player.currentBet;
+                player.chips -= cost;
+                player.currentBet = validAmount;
 
-                player.chips -= actualCost;
-                player.currentBet += actualCost;
-
-                // STATS: AF Numerator - Handled by OpponentProfiler
-
-                // Calculate actual raise size (amount ABOVE previous bet)
-                const raiseSize = player.currentBet - this.state.currentBet;
-
-                // Reset act status for all active players (re-opening betting)
-                // STRICT RULE: Only re-open betting if the raise is a full legal raise
-                // (i.e. raiseSize >= diff between minRaise and old currentBet? No, standard is raiseSize >= lastRaiseSize)
-                // For simplicity here: Any valid raise re-opens. 
-                // However, technically if an all-in is LESS than a min-raise, it does NOT re-open for those who already acted.
-                // We will implement simple re-open for now to fix the main bug.
-
-                const isFullRaise = validAmount >= minRaise;
-                if (isFullRaise) {
+                const raiseSize = validAmount - this.state.currentBet;
+                if (validAmount >= this.state.minRaise) {
                     this.state.players.forEach(p => {
-                        if (p.id !== player.id && p.status === 'active') {
-                            p.hasActed = false;
-                        }
+                        if (p.id !== player.id && p.status === 'active') p.hasActed = false;
                     });
-                    // Only update minRaise if it was a full raise
                     this.state.minRaise = this.state.currentBet + Math.max(raiseSize, this.state.bigBlindAmount);
                 } else {
-                    // Incomplete raise (all-in that didn't meet min-raise)
-                    // Does NOT re-open betting for players who already matched the previous bet.
-                    // But we need to make sure they still get a turn if they haven't acted?
-                    // Complex side-pot logic omitted for MVP, but preventing infinite loop is key.
                     this.state.players.forEach(p => {
-                        if (p.id !== player.id && p.status === 'active' && p.currentBet < player.currentBet) {
-                            p.hasActed = false; // Only re-open for those who have to call the extra
-                        }
+                        if (p.id !== player.id && p.status === 'active' && p.currentBet < player.currentBet) p.hasActed = false;
                     });
                 }
-
-                this.state.currentBet = player.currentBet;
-
+                
+                this.state.currentBet = validAmount;
                 if (player.chips === 0) player.status = 'all-in';
                 break;
         }

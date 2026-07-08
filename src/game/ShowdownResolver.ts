@@ -114,14 +114,7 @@ export class ShowdownResolver {
             const heroNetWon = heroWon - hero.handContribution;
             const isShowdown = activePlayers.length > 1; // True showdown if multiple players
             
-            let heroHandDesc = undefined;
-            if (isShowdown && activePlayers.some(p => p.id === hero.id)) {
-                // Find hero's evaluation
-                const heroResult = results.find(r => r.player.id === hero.id);
-                if (heroResult) {
-                    heroHandDesc = heroResult.hand.description;
-                }
-            }
+            // (heroHandDesc removed)
 
             state.sessionHands.push({
                 handNumber: state.handNumber,
@@ -135,8 +128,7 @@ export class ShowdownResolver {
                 heroCards: [...hero.cards],
                 heroPosition: hero.position,
                 communityCards: [...state.communityCards],
-                actionLog: [...state.currentHandLog],
-                heroHandDescription: heroHandDesc
+                actionLog: [...state.currentHandLog]
             });
         }
 

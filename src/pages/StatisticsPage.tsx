@@ -2,13 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StorageService, SavedSession, SavedHand } from '../services/StorageService';
 import { Card } from '../components/Card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, ScatterChart, Scatter, ZAxis } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
 const parseCardString = (cardStr: string) => {
     if (!cardStr) return null;
     let rank = cardStr.slice(0, -1);
-    const suit = cardStr.slice(-1);
     if (rank === 'T') rank = '10'; // Card component handles 'T' internally though, wait!
     // Wait, Card.tsx uses `rankNames[card.rank]`, where it expects 'T' to map to '10'.
     // If cardStr is "Th", we should pass rank: 'T', suit: 'h'.

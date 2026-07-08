@@ -1,0 +1,706 @@
+{
+    "session": {
+        "id": "sess_1783529738648",
+        "userId": "u_1783516976937gpwfq",
+        "date": "2026-07-08T16:55:38.648Z",
+        "handsPlayed": 17,
+        "chipsWon": 62,
+        "difficulty": "mixed",
+        "mode": "cash",
+        "vpipCount": 3,
+        "pfrCount": 1,
+        "threeBetCount": 0,
+        "threeBetOpportunity": 6,
+        "aggressionsCount": 3,
+        "callsCount": 0,
+        "sawFlopCount": 3,
+        "wonWhenSawFlopCount": 2,
+        "cbetFlopOpp": 1,
+        "cbetFlopCount": 1,
+        "cbetTurnOpp": 1,
+        "cbetTurnCount": 0,
+        "cbetRiverOpp": 0,
+        "cbetRiverCount": 0,
+        "stealOpp": 0,
+        "stealCount": 0,
+        "foldToStealOpp": 1,
+        "foldToStealCount": 1,
+        "foldToThreeBetOpp": 0,
+        "foldToThreeBetCount": 0,
+        "showdownsReached": 2,
+        "showdownsWon": 2,
+        "positionalStats": {
+            "BTN": {
+                "handsPlayed": 3,
+                "vpipCount": 0,
+                "pfrCount": 0,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            },
+            "CO": {
+                "handsPlayed": 3,
+                "vpipCount": 2,
+                "pfrCount": 1,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            },
+            "HJ": {
+                "handsPlayed": 3,
+                "vpipCount": 0,
+                "pfrCount": 0,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            },
+            "UTG": {
+                "handsPlayed": 3,
+                "vpipCount": 0,
+                "pfrCount": 0,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            },
+            "BB": {
+                "handsPlayed": 3,
+                "vpipCount": 1,
+                "pfrCount": 0,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            },
+            "SB": {
+                "handsPlayed": 2,
+                "vpipCount": 0,
+                "pfrCount": 0,
+                "threeBetCount": 0,
+                "stealOpp": 0,
+                "stealCount": 0,
+                "foldToStealOpp": 0,
+                "foldToStealCount": 0
+            }
+        }
+    },
+    "hands": [
+        {
+            "id": "sess_1783529738648_hand_0",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 1,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "BTN",
+            "heroCards": [
+                "3h",
+                "4s"
+            ],
+            "boardCards": [
+                "2h",
+                "As",
+                "6h",
+                "2c",
+                "4d"
+            ],
+            "potSize": 441,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 3 raises $5 (AcTd)",
+                "Bot 4 calls (JdQc)",
+                "Bot 5 folds (2sAh)",
+                "sr folds (3h4s)",
+                "Bot 1 folds (Qd9c)",
+                "Bot 2 calls (7d6d)",
+                "--- FLOP ---",
+                "Bot 2 bets $5 (7d6d)",
+                "Bot 3 calls (AcTd)",
+                "Bot 4 calls (JdQc)",
+                "--- TURN ---",
+                "Bot 2 bets $13 (7d6d)",
+                "Bot 3 raises $30 (AcTd)",
+                "Bot 4 calls (JdQc)",
+                "Bot 2 raises $70 (7d6d)",
+                "Bot 3 raises $190 (AcTd)",
+                "Bot 4 folds (JdQc)",
+                "Bot 2 raises $190 (7d6d)",
+                "--- RIVER ---"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_1",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 2,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "CO",
+            "heroCards": [
+                "3d",
+                "9d"
+            ],
+            "boardCards": [
+                "Ts",
+                "Js",
+                "As",
+                "8h",
+                "2h"
+            ],
+            "potSize": 36,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 4 calls (KdJd)",
+                "Bot 5 raises $5 (5h4h)",
+                "sr folds (3d9d)",
+                "Bot 1 calls (TdQd)",
+                "Bot 2 folds (4c3h)",
+                "Bot 3 folds (Qh8c)",
+                "Bot 4 calls (KdJd)",
+                "--- FLOP ---",
+                "Bot 4 checks (KdJd)",
+                "Bot 5 checks (5h4h)",
+                "Bot 1 checks (TdQd)",
+                "--- TURN ---",
+                "Bot 4 checks (KdJd)",
+                "Bot 5 checks (5h4h)",
+                "Bot 1 bets $9 (TdQd)",
+                "Bot 4 calls (KdJd)",
+                "Bot 5 folds (5h4h)",
+                "--- RIVER ---",
+                "Bot 4 checks (KdJd)",
+                "Bot 1 checks (TdQd)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_2",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 3,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "HJ",
+            "heroCards": [
+                "6c",
+                "4d"
+            ],
+            "boardCards": [
+                "8h",
+                "7h",
+                "8c",
+                "5s",
+                "3s"
+            ],
+            "potSize": 11,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 5 folds (3dTc)",
+                "sr folds (6c4d)",
+                "Bot 1 raises $5 (JsAd)",
+                "Bot 2 folds (9c7s)",
+                "Bot 3 folds (2d5c)",
+                "Bot 4 calls (Ks2s)",
+                "--- FLOP ---",
+                "Bot 4 checks (Ks2s)",
+                "Bot 1 checks (JsAd)",
+                "--- TURN ---",
+                "Bot 4 checks (Ks2s)",
+                "Bot 1 checks (JsAd)",
+                "--- RIVER ---",
+                "Bot 4 checks (Ks2s)",
+                "Bot 1 checks (JsAd)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_3",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 4,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "UTG",
+            "heroCards": [
+                "2c",
+                "9h"
+            ],
+            "boardCards": [],
+            "potSize": 8,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "sr folds (2c9h)",
+                "Bot 1 folds (4d3h)",
+                "Bot 2 folds (7sAh)",
+                "Bot 3 raises $5 (KsJc)",
+                "Bot 4 folds (7h2d)",
+                "Bot 5 folds (7c5s)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_4",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 5,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "BB",
+            "heroCards": [
+                "Kh",
+                "Td"
+            ],
+            "boardCards": [
+                "6c",
+                "Qd",
+                "8s",
+                "Qh",
+                "7d"
+            ],
+            "potSize": 41,
+            "heroNetWon": -2,
+            "heroShowdownWon": -2,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 1 folds (8c3s)",
+                "Bot 2 folds (3hTc)",
+                "Bot 3 raises $5 (5cJc)",
+                "Bot 4 calls (5s6s)",
+                "Bot 5 folds (Jd9s)",
+                "sr folds (KhTd)",
+                "--- FLOP ---",
+                "Bot 3 bets $4 (5cJc)",
+                "Bot 4 calls (5s6s)",
+                "--- TURN ---",
+                "Bot 3 bets $10 (5cJc)",
+                "Bot 4 calls (5s6s)",
+                "--- RIVER ---",
+                "Bot 3 checks (5cJc)",
+                "Bot 4 checks (5s6s)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_5",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 6,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "SB",
+            "heroCards": [
+                "2s",
+                "7d"
+            ],
+            "boardCards": [
+                "Kh",
+                "6s",
+                "2c",
+                "9h",
+                "Qs"
+            ],
+            "potSize": 9,
+            "heroNetWon": -1,
+            "heroShowdownWon": -1,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 2 folds (ThQd)",
+                "Bot 3 folds (8h6c)",
+                "Bot 4 calls (Kd3d)",
+                "Bot 5 folds (9d7h)",
+                "sr folds (2s7d)",
+                "Bot 1 checks (3c5s)",
+                "--- FLOP ---",
+                "Bot 1 bets $2 (3c5s)",
+                "Bot 4 calls (Kd3d)",
+                "--- TURN ---",
+                "Bot 1 checks (3c5s)",
+                "Bot 4 checks (Kd3d)",
+                "--- RIVER ---",
+                "Bot 1 checks (3c5s)",
+                "Bot 4 checks (Kd3d)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_6",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 7,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "BTN",
+            "heroCards": [
+                "Qs",
+                "3s"
+            ],
+            "boardCards": [
+                "4s",
+                "3d",
+                "4h",
+                "8h",
+                "2c"
+            ],
+            "potSize": 9,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 3 folds (9h2d)",
+                "Bot 4 calls (As2h)",
+                "Bot 5 folds (Js5h)",
+                "sr folds (Qs3s)",
+                "Bot 1 folds (9cJh)",
+                "Bot 2 checks (7cQd)",
+                "--- FLOP ---",
+                "Bot 2 checks (7cQd)",
+                "Bot 4 checks (As2h)",
+                "--- TURN ---",
+                "Bot 2 checks (7cQd)",
+                "Bot 4 checks (As2h)",
+                "--- RIVER ---",
+                "Bot 2 bets $2 (7cQd)",
+                "Bot 4 calls (As2h)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_7",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 8,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "CO",
+            "heroCards": [
+                "Kd",
+                "Th"
+            ],
+            "boardCards": [
+                "Qs",
+                "5d",
+                "9d",
+                "Ad",
+                "Jc"
+            ],
+            "potSize": 101,
+            "heroNetWon": 52,
+            "heroShowdownWon": 52,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 4 calls (6d6c)",
+                "Bot 5 folds (Tc8s)",
+                "sr raises $9 (KdTh)",
+                "Bot 1 folds (7d7c)",
+                "Bot 2 folds (2d4s)",
+                "Bot 3 folds (5hKc)",
+                "Bot 4 calls (6d6c)",
+                "--- FLOP ---",
+                "Bot 4 checks (6d6c)",
+                "sr bets $10 (KdTh)",
+                "Bot 4 calls (6d6c)",
+                "--- TURN ---",
+                "Bot 4 checks (6d6c)",
+                "sr checks (KdTh)",
+                "--- RIVER ---",
+                "Bot 4 checks (6d6c)",
+                "sr bets $30 (KdTh)",
+                "Bot 4 calls (6d6c)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_8",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 9,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "HJ",
+            "heroCards": [
+                "Jd",
+                "9c"
+            ],
+            "boardCards": [
+                "Qh",
+                "2s",
+                "9h",
+                "Ac",
+                "8c"
+            ],
+            "potSize": 11,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 5 folds (2c8h)",
+                "sr folds (Jd9c)",
+                "Bot 1 raises $5 (9dTd)",
+                "Bot 2 folds (Kc8s)",
+                "Bot 3 folds (Ad6s)",
+                "Bot 4 calls (7h7s)",
+                "--- FLOP ---",
+                "Bot 4 checks (7h7s)",
+                "Bot 1 checks (9dTd)",
+                "--- TURN ---",
+                "Bot 4 checks (7h7s)",
+                "Bot 1 checks (9dTd)",
+                "--- RIVER ---",
+                "Bot 4 checks (7h7s)",
+                "Bot 1 checks (9dTd)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_9",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 10,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "UTG",
+            "heroCards": [
+                "Qs",
+                "9c"
+            ],
+            "boardCards": [
+                "6c",
+                "3d",
+                "Js",
+                "8h",
+                "7s"
+            ],
+            "potSize": 36,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "sr folds (Qs9c)",
+                "Bot 1 folds (8dAc)",
+                "Bot 2 folds (2d5s)",
+                "Bot 3 raises $5 (TsJd)",
+                "Bot 4 calls (QdJh)",
+                "Bot 5 folds (4c2h)",
+                "--- FLOP ---",
+                "Bot 4 checks (QdJh)",
+                "Bot 3 bets $3 (TsJd)",
+                "Bot 4 calls (QdJh)",
+                "--- TURN ---",
+                "Bot 4 checks (QdJh)",
+                "Bot 3 checks (TsJd)",
+                "--- RIVER ---",
+                "Bot 4 checks (QdJh)",
+                "Bot 3 bets $9 (TsJd)",
+                "Bot 4 calls (QdJh)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_10",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 11,
+            "timestamp": "2026-07-08T17:02:48.461Z",
+            "heroPosition": "BB",
+            "heroCards": [
+                "Kh",
+                "Ad"
+            ],
+            "boardCards": [
+                "Js",
+                "3s",
+                "Ks",
+                "4h"
+            ],
+            "potSize": 36,
+            "heroNetWon": 16,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 16,
+            "actionLog": [
+                "Bot 1 raises $5 (AsJd)",
+                "Bot 2 calls (KdQd)",
+                "Bot 3 folds (2c2d)",
+                "Bot 4 calls (Ah5d)",
+                "Bot 5 folds (Ts9d)",
+                "sr calls (KhAd)",
+                "--- FLOP ---",
+                "sr checks (KhAd)",
+                "Bot 1 checks (AsJd)",
+                "Bot 2 checks (KdQd)",
+                "Bot 4 checks (Ah5d)",
+                "--- TURN ---",
+                "sr bets $15 (KhAd)",
+                "Bot 1 folds (AsJd)",
+                "Bot 2 folds (KdQd)",
+                "Bot 4 folds (Ah5d)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_11",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 12,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "SB",
+            "heroCards": [
+                "Qd",
+                "4s"
+            ],
+            "boardCards": [
+                "Kc",
+                "9h",
+                "7d"
+            ],
+            "potSize": 7,
+            "heroNetWon": -1,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": -1,
+            "actionLog": [
+                "Bot 2 folds (5h7h)",
+                "Bot 3 folds (2d3s)",
+                "Bot 4 calls (6s2s)",
+                "Bot 5 folds (Kh4h)",
+                "sr folds (Qd4s)",
+                "Bot 1 checks (7sKs)",
+                "--- FLOP ---",
+                "Bot 1 bets $2 (7sKs)",
+                "Bot 4 folds (6s2s)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_12",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 13,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "BTN",
+            "heroCards": [
+                "Js",
+                "Th"
+            ],
+            "boardCards": [],
+            "potSize": 8,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 3 raises $5 (AcTs)",
+                "Bot 4 folds (6h2s)",
+                "Bot 5 folds (7hTd)",
+                "sr folds (JsTh)",
+                "Bot 1 folds (9h5c)",
+                "Bot 2 folds (4dKd)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_13",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 14,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "CO",
+            "heroCards": [
+                "Ts",
+                "9s"
+            ],
+            "boardCards": [
+                "Kc",
+                "5d",
+                "4s",
+                "Jd",
+                "2h"
+            ],
+            "potSize": 13,
+            "heroNetWon": 1,
+            "heroShowdownWon": 1,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 4 folds (Ks7d)",
+                "Bot 5 raises $5 (Tc9c)",
+                "sr calls (Ts9s)",
+                "Bot 1 folds (7sJh)",
+                "Bot 2 folds (7h2s)",
+                "Bot 3 folds (Th3d)",
+                "--- FLOP ---",
+                "Bot 5 checks (Tc9c)",
+                "sr checks (Ts9s)",
+                "--- TURN ---",
+                "Bot 5 checks (Tc9c)",
+                "sr checks (Ts9s)",
+                "--- RIVER ---",
+                "Bot 5 checks (Tc9c)",
+                "sr checks (Ts9s)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_14",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 15,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "HJ",
+            "heroCards": [
+                "6h",
+                "9h"
+            ],
+            "boardCards": [],
+            "potSize": 3,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "Bot 5 folds (3sJd)",
+                "sr folds (6h9h)",
+                "Bot 1 folds (6s2c)",
+                "Bot 2 folds (7h2s)",
+                "Bot 3 folds (8d2d)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_15",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 16,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "UTG",
+            "heroCards": [
+                "3s",
+                "2s"
+            ],
+            "boardCards": [
+                "9d",
+                "2d",
+                "3d",
+                "Qh",
+                "Ah"
+            ],
+            "potSize": 26,
+            "heroNetWon": 0,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": 0,
+            "actionLog": [
+                "sr folds (3s2s)",
+                "Bot 1 folds (Qd3h)",
+                "Bot 2 folds (4sQc)",
+                "Bot 3 raises $5 (7c2c)",
+                "Bot 4 calls (6s6c)",
+                "Bot 5 folds (Jh3c)",
+                "--- FLOP ---",
+                "Bot 4 checks (6s6c)",
+                "Bot 3 bets $7 (7c2c)",
+                "Bot 4 calls (6s6c)",
+                "--- TURN ---",
+                "Bot 4 checks (6s6c)",
+                "Bot 3 checks (7c2c)",
+                "--- RIVER ---",
+                "Bot 4 checks (6s6c)",
+                "Bot 3 checks (7c2c)"
+            ]
+        },
+        {
+            "id": "sess_1783529738648_hand_16",
+            "sessionId": "sess_1783529738648",
+            "handNumber": 17,
+            "timestamp": "2026-07-08T17:02:48.462Z",
+            "heroPosition": "BB",
+            "heroCards": [
+                "9d",
+                "3s"
+            ],
+            "boardCards": [],
+            "potSize": 5,
+            "heroNetWon": -2,
+            "heroShowdownWon": 0,
+            "heroNonShowdownWon": -2,
+            "actionLog": [
+                "Bot 1 folds (4d5h)",
+                "Bot 2 folds (5cTd)",
+                "Bot 3 folds (6sTc)",
+                "Bot 4 calls (KhJh)",
+                "Bot 5 folds (7hAd)",
+                "sr folds (9d3s)"
+            ]
+        }
+    ]
+}

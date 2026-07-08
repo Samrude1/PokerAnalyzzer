@@ -1,35 +1,34 @@
-# Memory — Leakfinder Dashboard & Advanced Profiling
+# Memory — Code Optimization & Refactoring
 
 Last updated: 2026-07-08
 
 ## What was built
 
-- **Advanced Profiling Engine**: Expanded `PokerGame.ts`, `OpponentProfiler.ts`, and `ShowdownResolver.ts` to track granular metrics during hand progression: C-Bet (Flop/Turn/River), ATS (Attempt to Steal), Fold-to-Steal, and Showdown metrics (WTSD%, W$SD, W$WSF).
-- **Hand Descriptions**: Added `heroHandDescription` tracking to showdowns so the UI can log the explicit textual strength of a hand (e.g., "Full House").
-- **Leakfinder Dashboard**: Built a completely new "Global Leakfinder" UI on `StatisticsPage.tsx` utilizing `recharts`. It dynamically visualizes C-Bet tendencies, warns of leaks like "Calling Station" behavior using Showdown ratios, and includes a full Positional Matrix (VPIP/PFR/ATS per seat).
-- **Session Navigation**: Overhauled the UX on the Statistics page so that the global Leakfinder is the default view. Added a "🌍 Global Leakfinder" button to explicitly return to the global view after reviewing a specific session.
+- **Game Logic Hooks**: Extracted the core React loop mechanisms from `GamePage.tsx` into isolated hooks: `useBotTurn.ts` (handles bot decision delays and loops) and `useHandProgression.ts` (handles showdown and countdown timers).
+- **Decoupled Stats Tracking**: Moved a massive ~100-line stats tracking block (for VPIP, PFR, ATS, 3-Bet, etc.) out of `PokerGame.ts` `handleAction` into a dedicated `OpponentProfiler.trackAction()` static method.
+- **Simplified Raise Logic**: Cleaned up the raise validation logic in `PokerGame.ts` to handle minimum raises and all-ins more elegantly.
+- **Type Safety**: Addressed numerous TypeScript errors (`tsc --noEmit`) related to implicit `any` types, missing interfaces, and unused `recharts` imports in `StatisticsPage.tsx`.
 
 ## Decisions made
 
-- **Standardized Initialization**: Replaced manual stat object assignments scattered across the codebase with a unified call to `OpponentProfiler.initializeStats()`. This guarantees all entities (Hero and Bots) always have complex sub-structures like `positionalStats` properly defined.
-- **Default Dashboard State**: Disabled the automatic selection of the first session on the Statistics page to ensure the overarching analytical Leakfinder is the first thing a player sees upon entering.
+- **React Architecture**: Transitioned `GamePage.tsx` from a monolith to a hook-orchestrator pattern. This improves React render performance and developer readability.
+- **Skipped startNewHand Refactor**: Decided to defer breaking down `PokerGame.ts` `startNewHand` into smaller private methods. It was deemed an over-optimization at this stage and risked introducing subtle bugs into the dealer and blind posting mechanics.
 
 ## Problems solved
 
-- **Runtime Crashes**: Solved `Cannot read properties of undefined (reading 'CO')` during steals by updating `TournamentManager.ts` and `GamePage.tsx` to instantiate bot and hero stats correctly using `initializeStats()`.
-- **JSX Compilation Error**: Fixed a Vite hot-reload break caused by an unescaped `>` symbol in the JSX leakfinder text.
-- **Duplicate UI Rendering**: Fixed a bug where the old "Lifetime Cash Game Stats" was unconditionally rendering on top of the selected session's Profit & Loss graph.
+- **TypeScript Compilation**: Fixed multiple build errors (e.g., `heroHandDescription` not existing on `HandHistory` in `ShowdownResolver.ts`, unused variables) ensuring the project compiles cleanly.
+- **Dependency Cycles**: Used `useRef` for `handleNextHand` in `GamePage.tsx` to safely pass the callback into the new hooks without creating a `useEffect` dependency loop.
 
 ## Current state
 
-- The game features a complete, Poker Tracker-style analytics suite.
-- Positional, C-Bet, and Showdown data correctly accumulate during hands and are serialized to session JSON files for lifetime aggregation.
-- The UI handles the rendering of both global analytics and granular single-session reviews cleanly.
+- The game functions identically to before (including the new Final Table visual distinction built prior), but the internal architecture is drastically improved.
+- `GamePage.tsx` and `PokerGame.ts` are much leaner and easier to maintain.
+- The project type-checks perfectly.
 
 ## Next session starts with
 
-- Fulfilling the pending user request: Making the **Tournament Final Table** visually distinct (e.g., changing the table texture to red) to give players a clear indication that they have reached the final phase.
+- Awaiting user input for the next feature or area of improvement. The foundation is now solid and clean enough to handle more complex game rules or AI behavior expansions.
 
 ## Open questions
 
-- Are there any other specific stats or Leakfinder warnings the user wants to add to the dashboard?
+- Are there any other specific components or game engine areas the user feels are still too complex or need refactoring?

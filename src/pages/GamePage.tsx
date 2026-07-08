@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PokerGame } from '../game/PokerGame';
 import { Player, BotDifficulty } from '../game/types';
-import { BotLogic } from '../game/BotLogic';
 import { TournamentManager } from '../game/TournamentManager';
 import { OpponentProfiler } from '../game/OpponentProfiler';
 import { PokerTable } from '../components/PokerTable';
@@ -14,6 +13,8 @@ import { SessionDashboard } from '../components/SessionDashboard';
 import { SoundManager } from '../utils/SoundManager';
 import { useAuth } from '../context/AuthContext';
 import { StorageService } from '../services/StorageService';
+import { useBotTurn } from '../hooks/useBotTurn';
+import { useHandProgression } from '../hooks/useHandProgression';
 
 const INITIAL_CHIPS = 200;
 const AUTO_NEXT_HAND_DELAY = 5;
@@ -27,14 +28,23 @@ export const GamePage: React.FC = () => {
 
     // Game State
     const [game, setGame] = useState<PokerGame | null>(null);
-    const [showShowdown, setShowShowdown] = useState(false);
     const [showDashboard, setShowDashboard] = useState(false);
     const [showFinalTableAnnouncement, setShowFinalTableAnnouncement] = useState(false);
     const [hasSeenFinalTable, setHasSeenFinalTable] = useState(false);
-    const [countdown, setCountdown] = useState(AUTO_NEXT_HAND_DELAY);
     const [botAutoTop, setBotAutoTop] = useState(true);
     const [, setTick] = useState(0);
     const [accumulatedHands, setAccumulatedHands] = useState<any[]>([]);
+
+    const triggerTick = useCallback(() => setTick(t => t + 1), []);
+    const handleNextHandRef = useRef<() => void>(() => {});
+
+    const { showShowdown, setShowShowdown, countdown, setCountdown } = useHandProgression({
+        game,
+        autoNextHandDelay: AUTO_NEXT_HAND_DELAY,
+        onNextHand: () => handleNextHandRef.current()
+    });
+
+    useBotTurn({ game, onTick: triggerTick });
 
     // Session tracking
     const sessionId = useRef<string>(`sess_${Date.now()}`);
@@ -202,8 +212,8 @@ export const GamePage: React.FC = () => {
                 handNumber: h.handNumber,
                 timestamp: new Date().toISOString(),
                 heroPosition: h.heroPosition,
-                heroCards: h.heroCards.map(c => `${c.rank}${c.suit}`),
-                boardCards: h.communityCards.map(c => `${c.rank}${c.suit}`),
+                heroCards: h.heroCards.map((c: any) => `${c.rank}${c.suit}`),
+                boardCards: h.communityCards.map((c: any) => `${c.rank}${c.suit}`),
                 potSize: h.finalPot,
                 heroNetWon: h.heroNetWon,
                 heroShowdownWon: h.heroShowdownWon,
@@ -218,55 +228,7 @@ export const GamePage: React.FC = () => {
         navigate('/');
     };
 
-    // Bot Turn Loop
-    useEffect(() => {
-        if (!game) return;
-        if (game.state.phase === 'showdown') return;
-        if (game.state.isGameOver) return;
-
-        const activePlayer = game.state.players.find(p => p.id === game.state.activePlayerId);
-
-        if (activePlayer && !activePlayer.isHuman && activePlayer.status === 'active') {
-            const timeoutId = setTimeout(() => {
-                const decision = BotLogic.decide(game, activePlayer);
-
-                if (decision.action === 'fold') SoundManager.playFold();
-                else if (decision.action === 'check') SoundManager.playCheck();
-                else if (decision.action === 'call' || decision.action === 'raise') SoundManager.playChip();
-
-                game.handleAction(activePlayer.id, decision.action, decision.amount);
-                setTick(t => t + 1);
-            }, 800 + Math.random() * 700);
-
-            return () => clearTimeout(timeoutId);
-        }
-    }, [game, game?.state.activePlayerId, game?.state.phase]);
-
-    // Showdown detection
-    useEffect(() => {
-        if (!game) return;
-
-        if (game.state.phase === 'showdown' && game.state.winnerInfo && !showShowdown) {
-            setShowShowdown(true);
-            setCountdown(AUTO_NEXT_HAND_DELAY);
-            SoundManager.playWin();
-
-            // Hands are saved when leaving the table.
-        }
-    }, [game, game?.state.phase, game?.state.winnerInfo, showShowdown]);
-
-    // Countdown timer
-    useEffect(() => {
-        if (!showShowdown || !game) return;
-        if (game.state.isGameOver) return;
-
-        if (countdown > 0) {
-            const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-            return () => clearTimeout(timer);
-        } else {
-            handleNextHand();
-        }
-    }, [countdown, showShowdown, game]);
+    // Hooks handle bot loop and hand progression countdown now
 
     const handleAction = (actionType: 'fold' | 'call' | 'check' | 'raise', amount?: number) => {
         if (!game) return;
@@ -367,6 +329,7 @@ export const GamePage: React.FC = () => {
         setTick(t => t + 1);
         setTimeout(() => SoundManager.playDeal(), 100);
     };
+    handleNextHandRef.current = handleNextHand;
 
     if (!game) return <div className="text-white flex items-center justify-center h-screen">Loading Table...</div>;
 

@@ -3,6 +3,7 @@ import { BotLogic } from './BotLogic';
 import { PokerGame } from './PokerGame';
 import { Player, GameState } from './types';
 import { Rank, Suit } from './Deck';
+import { OpponentProfiler } from './OpponentProfiler';
 
 // Mock PokerGame to control state
 const createMockGame = (
@@ -28,22 +29,7 @@ const createMockGame = (
         avatar: '',
         isHuman: false,
         handContribution: 0,
-        stats: {
-            vpip: 0,
-            pfr: 0,
-            af: 0,
-            handsPlayed: 0,
-            handsWon: 0,
-            vpipCount: 0,
-            pfrCount: 0,
-            threeBetCount: 0,
-            threeBetOpportunity: 0,
-            aggressionsCount: 0,
-            callsCount: 0,
-            showdownsReached: 0,
-            showdownsWon: 0,
-            sessionPnL: 0
-        }
+        stats: OpponentProfiler.initializeStats()
     };
 
     const gameState: GameState = {
