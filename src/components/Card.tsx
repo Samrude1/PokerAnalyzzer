@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { Card as CardType } from '../game/Deck';
 import React, { useState, useEffect } from 'react';
 
@@ -7,6 +8,8 @@ interface CardProps {
     hidden?: boolean;
     className?: string;
     large?: boolean;
+    small?: boolean;
+    mini?: boolean;
     animateIn?: boolean;
     animationDelay?: number;
     flipReveal?: boolean;
@@ -19,7 +22,7 @@ const SUIT_MAP: Record<string, string> = {
     s: 'Spades',
 };
 
-export const Card = React.memo(function Card({ card, hidden, className, large, animateIn, animationDelay = 0, flipReveal }: CardProps) {
+export const Card = React.memo(function Card({ card, hidden, className, large, small, mini, animateIn, animationDelay = 0, flipReveal }: CardProps) {
     const [isVisible, setIsVisible] = useState(!animateIn);
     const [isFlipped, setIsFlipped] = useState(!flipReveal);
     const [imageLoaded, setImageLoaded] = useState(false);
@@ -39,9 +42,10 @@ export const Card = React.memo(function Card({ card, hidden, className, large, a
     }, [flipReveal, animationDelay]);
 
     // Card sizes - Balanced for visibility
-    const sizeClasses = large
-        ? 'w-24 h-36'   // Community cards (slightly smaller)
-        : 'w-[5.5rem] h-32';  // Player cards (slightly larger)
+    let sizeClasses = 'w-[5.5rem] h-32';  // Player cards (slightly larger)
+    if (large) sizeClasses = 'w-24 h-36'; // Community cards
+    if (small) sizeClasses = 'w-16 h-24'; // Modals
+    if (mini) sizeClasses = 'w-10 h-14';  // Lists
 
     // Get card image path
     const getCardImage = (card: CardType) => {
@@ -88,7 +92,7 @@ export const Card = React.memo(function Card({ card, hidden, className, large, a
 
     return (
         <div
-            className={clsx(
+            className={twMerge(
                 'relative transition-all duration-300',
                 sizeClasses,
                 animateIn && !isVisible && 'opacity-0 scale-75 translate-y-6',

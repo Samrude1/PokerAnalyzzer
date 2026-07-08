@@ -82,6 +82,9 @@ export class ShowdownResolver {
             w.player.chips += splitPot;
             w.player.stats.handsWon++; // Total Wins
             w.player.stats.showdownsWon++; // Showdown Wins
+            if (w.player.sawFlop) {
+                w.player.stats.wonWhenSawFlopCount++;
+            }
         });
 
         // Calculate session P/L for all players who participated in this hand
@@ -110,6 +113,15 @@ export class ShowdownResolver {
             const heroWon = winners.some(w => w.player.id === hero.id) ? splitPot : 0;
             const heroNetWon = heroWon - hero.handContribution;
             const isShowdown = activePlayers.length > 1; // True showdown if multiple players
+            
+            let heroHandDesc = undefined;
+            if (isShowdown && activePlayers.some(p => p.id === hero.id)) {
+                // Find hero's evaluation
+                const heroResult = results.find(r => r.player.id === hero.id);
+                if (heroResult) {
+                    heroHandDesc = heroResult.hand.description;
+                }
+            }
 
             state.sessionHands.push({
                 handNumber: state.handNumber,
@@ -123,7 +135,8 @@ export class ShowdownResolver {
                 heroCards: [...hero.cards],
                 heroPosition: hero.position,
                 communityCards: [...state.communityCards],
-                actionLog: [...state.currentHandLog]
+                actionLog: [...state.currentHandLog],
+                heroHandDescription: heroHandDesc
             });
         }
 

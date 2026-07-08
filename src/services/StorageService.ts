@@ -10,6 +10,39 @@ export interface SavedSession {
     prizeWon?: number;
     placement?: number;
     totalPlayers?: number;
+    // Lifetime stats counters
+    vpipCount?: number;
+    pfrCount?: number;
+    threeBetCount?: number;
+    threeBetOpportunity?: number;
+    aggressionsCount?: number;
+    callsCount?: number;
+    sawFlopCount?: number;
+    wonWhenSawFlopCount?: number;
+    cbetFlopOpp?: number;
+    cbetFlopCount?: number;
+    cbetTurnOpp?: number;
+    cbetTurnCount?: number;
+    cbetRiverOpp?: number;
+    cbetRiverCount?: number;
+    stealOpp?: number;
+    stealCount?: number;
+    foldToStealOpp?: number;
+    foldToStealCount?: number;
+    foldToThreeBetOpp?: number;
+    foldToThreeBetCount?: number;
+    showdownsReached?: number;
+    showdownsWon?: number;
+    positionalStats?: Record<string, {
+        handsPlayed: number;
+        vpipCount: number;
+        pfrCount: number;
+        threeBetCount: number;
+        stealOpp: number;
+        stealCount: number;
+        foldToStealOpp: number;
+        foldToStealCount: number;
+    }>;
 }
 
 export interface SavedHand {
@@ -25,6 +58,7 @@ export interface SavedHand {
     heroShowdownWon: number;
     heroNonShowdownWon: number;
     actionLog: string[];
+    heroHandDescription?: string;
 }
 
 export class StorageService {
@@ -37,6 +71,16 @@ export class StorageService {
             });
         } catch (e) {
             console.error("Failed to save session", e);
+        }
+    }
+
+    static async deleteSession(sessionId: string): Promise<void> {
+        try {
+            await fetch(`/api/sessions/${sessionId}`, {
+                method: 'DELETE'
+            });
+        } catch (e) {
+            console.error("Failed to delete session", e);
         }
     }
 

@@ -35,6 +35,7 @@ Last updated: 2026-07-07
 | Property         | Value           |
 | ---------------- | --------------- |
 | Base Style       | `w-4 h-4 rounded bg-gray-800 border-gray-600` |
+
 ### UI Stat Patterns
 File: `src/components/Seat.tsx`
 Last updated: 2026-07-07
@@ -47,3 +48,17 @@ Last updated: 2026-07-07
 
 **Pattern notes:**
 The bottom row of player statistics always prioritizes tournament-relevant stack depth (M-Ratio) rather than session cash game winnings, applying to all game modes for consistency.
+
+### Advanced Analytics & Profiling
+File: `src/game/OpponentProfiler.ts`, `src/pages/StatisticsPage.tsx`
+Last updated: 2026-07-08
+
+| Property         | Value           |
+| ---------------- | --------------- |
+| Instantiation    | `OpponentProfiler.initializeStats()` |
+| C-Bet Tracking   | Flop, Turn, River evaluated for pre-flop aggressor |
+| Showdown Stats   | WTSD%, W$SD, W$WSF tracked upon hand completion |
+| Positional Stats | VPIP, PFR, ATS isolated per seat (UTG, BTN, etc.) |
+
+**Pattern notes:**
+All bots and human players must have their stats instantiated via `OpponentProfiler.initializeStats()` to ensure complex substructures (like `positionalStats`) exist. The system tracks raw counts during the hand and recalculates percentages dynamically. The main `StatisticsPage` defaults to aggregating these across a player's lifetime as a Global Leakfinder rather than focusing purely on a single session's variance.

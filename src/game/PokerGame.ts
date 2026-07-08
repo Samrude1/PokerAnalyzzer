@@ -179,8 +179,48 @@ export class PokerGame {
                 // A 3-bet opportunity is when facing a raise (currentBet > bigBlind)
                 const facingRaise = this.state.currentBet > this.state.bigBlindAmount;
                 if (facingRaise) { // Only track if facing a raise
+                    // Check Fold to Steal
+                    if (player.facedSteal) {
+                        const foldedToSteal = action === 'fold';
+                        OpponentProfiler.updateSteal(player, false, false, true, foldedToSteal);
+                        player.facedSteal = false; // Resolved
+                    }
+                    
                     const isThreeBet = action === 'raise';
                     OpponentProfiler.updateThreeBetStats(player, isThreeBet, true);
+                    
+                    if (isThreeBet) {
+                        // Mark everyone else as facing a 3-bet
+                        this.state.players.forEach(p => {
+                            if (p.id !== player.id && p.status === 'active') {
+                                p.facedThreeBet = true;
+                            }
+                        });
+                    }
+                } else {
+                    // Steal Opportunity Check
+                    const isLatePosition = ['CO', 'BTN', 'SB'].includes(player.position || '');
+                    // No one has VPIPed yet (limped or raised) before this player
+                    const unraisedPot = !this.state.players.some(p => p.id !== playerId && p.hasVPIPInHand && p.role !== 'small-blind' && p.role !== 'big-blind');
+                    
+                    if (isLatePosition && unraisedPot) {
+                        const isSteal = action === 'raise';
+                        OpponentProfiler.updateSteal(player, true, isSteal, false, false);
+                        
+                        if (isSteal) {
+                            // The blinds are now facing a steal
+                            this.state.players.forEach(p => {
+                                if (p.role === 'small-blind' || p.role === 'big-blind') {
+                                    p.facedSteal = true;
+                                }
+                            });
+                        }
+                    }
+                }
+
+                if (isPFR) {
+                    this.state.players.forEach(p => p.isPreflopAggressor = false);
+                    player.isPreflopAggressor = true;
                 }
             } else {
                 // Post-flop: Track Aggression Factor
@@ -188,8 +228,28 @@ export class PokerGame {
                     OpponentProfiler.updatePostFlopAction(player, 'raise');
                 } else if (action === 'call') {
                     OpponentProfiler.updatePostFlopAction(player, 'call');
-                } else if (action === 'check') {
-                    // Checks don't impact AF usually, or count as passive? Standard AF doesn't count checks.
+                }
+                
+                // C-Bet Tracking
+                if (player.isPreflopAggressor && this.state.currentBet === 0) {
+                    const isCBet = action === 'raise';
+                    const isCBetOpp = action === 'raise' || action === 'check';
+                    
+                    if (isCBetOpp && ['flop', 'turn', 'river'].includes(this.state.phase)) {
+                        OpponentProfiler.updateCBet(player, this.state.phase as 'flop' | 'turn' | 'river', true, isCBet);
+                    }
+                    
+                    // If they didn't C-bet (checked), they lose preflop aggressor status for next streets
+                    if (action === 'check') {
+                        player.isPreflopAggressor = false;
+                    }
+                }
+                
+                // If someone else bets, they take over the aggressor role (for turn/river C-bets)
+                // Though technically a "C-Bet" is only for the preflop aggressor.
+                if (action === 'raise') {
+                    this.state.players.forEach(p => p.isPreflopAggressor = false);
+                    player.isPreflopAggressor = true;
                 }
             }
         }
@@ -436,6 +496,14 @@ export class PokerGame {
             this.state.phase = 'flop';
             this.state.currentHandLog.push("--- FLOP ---");
             this.dealCommunityCards(3);
+            
+            // Mark active players as having seen the flop
+            this.state.players.forEach(p => {
+                if (p.status === 'active' || p.status === 'all-in') {
+                    p.sawFlop = true;
+                    if (p.stats) p.stats.sawFlopCount++;
+                }
+            });
         } else if (this.state.phase === 'flop') {
             this.state.phase = 'turn';
             this.state.currentHandLog.push("--- TURN ---");

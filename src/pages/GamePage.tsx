@@ -4,10 +4,12 @@ import { PokerGame } from '../game/PokerGame';
 import { Player, BotDifficulty } from '../game/types';
 import { BotLogic } from '../game/BotLogic';
 import { TournamentManager } from '../game/TournamentManager';
+import { OpponentProfiler } from '../game/OpponentProfiler';
 import { PokerTable } from '../components/PokerTable';
 import { Controls } from '../components/Controls';
 import { ShowdownOverlay } from '../components/ShowdownOverlay';
 import { GameOverScreen } from '../components/GameOverScreen';
+import { FinalTableAnnouncement } from '../components/FinalTableAnnouncement';
 import { SessionDashboard } from '../components/SessionDashboard';
 import { SoundManager } from '../utils/SoundManager';
 import { useAuth } from '../context/AuthContext';
@@ -27,9 +29,12 @@ export const GamePage: React.FC = () => {
     const [game, setGame] = useState<PokerGame | null>(null);
     const [showShowdown, setShowShowdown] = useState(false);
     const [showDashboard, setShowDashboard] = useState(false);
+    const [showFinalTableAnnouncement, setShowFinalTableAnnouncement] = useState(false);
+    const [hasSeenFinalTable, setHasSeenFinalTable] = useState(false);
     const [countdown, setCountdown] = useState(AUTO_NEXT_HAND_DELAY);
     const [botAutoTop, setBotAutoTop] = useState(true);
     const [, setTick] = useState(0);
+    const [accumulatedHands, setAccumulatedHands] = useState<any[]>([]);
 
     // Session tracking
     const sessionId = useRef<string>(`sess_${Date.now()}`);
@@ -76,15 +81,7 @@ export const GamePage: React.FC = () => {
                 hasActed: false,
                 handContribution: 0,
                 difficulty: diff,
-                stats: {
-                    vpip: 0, pfr: 0, af: 0,
-                    handsPlayed: 0, handsWon: 0,
-                    vpipCount: 0, pfrCount: 0,
-                    threeBetCount: 0, threeBetOpportunity: 0,
-                    aggressionsCount: 0, callsCount: 0,
-                    showdownsReached: 0, showdownsWon: 0,
-                    sessionPnL: 0
-                }
+                stats: OpponentProfiler.initializeStats()
             };
         });
 
@@ -101,15 +98,7 @@ export const GamePage: React.FC = () => {
             isHuman: true,
             hasActed: false,
             handContribution: 0,
-            stats: {
-                vpip: 0, pfr: 0, af: 0,
-                handsPlayed: 0, handsWon: 0,
-                vpipCount: 0, pfrCount: 0,
-                threeBetCount: 0, threeBetOpportunity: 0,
-                aggressionsCount: 0, callsCount: 0,
-                showdownsReached: 0, showdownsWon: 0,
-                sessionPnL: 0
-            }
+            stats: OpponentProfiler.initializeStats()
         };
 
         if (mode === 'tournament') {
@@ -134,6 +123,11 @@ export const GamePage: React.FC = () => {
         newGame.startNewHand();
         setGame(newGame);
         SoundManager.playClick();
+        
+        if (mode === 'tournament' && tournamentRef.current?.tables.length === 1) {
+            // Started as a single table tournament (e.g. 9 players or fewer)
+            setHasSeenFinalTable(true);
+        }
 
         // Cleanup function to save session when unmounting
         return () => {
@@ -142,7 +136,7 @@ export const GamePage: React.FC = () => {
         };
     }, [createGame]);
 
-    const handleLeaveGame = () => {
+    const handleLeaveGame = async () => {
         if (!game) return;
 
         // Save Session
@@ -155,7 +149,30 @@ export const GamePage: React.FC = () => {
                 handsPlayed: hero.stats.handsPlayed,
                 chipsWon: hero.chips - hero.totalBuyIn,
                 difficulty: tableType,
-                mode: mode
+                mode: mode,
+                vpipCount: hero.stats.vpipCount,
+                pfrCount: hero.stats.pfrCount,
+                threeBetCount: hero.stats.threeBetCount,
+                threeBetOpportunity: hero.stats.threeBetOpportunity,
+                aggressionsCount: hero.stats.aggressionsCount,
+                callsCount: hero.stats.callsCount,
+                sawFlopCount: hero.stats.sawFlopCount,
+                wonWhenSawFlopCount: hero.stats.wonWhenSawFlopCount,
+                cbetFlopOpp: hero.stats.cbetFlopOpp,
+                cbetFlopCount: hero.stats.cbetFlopCount,
+                cbetTurnOpp: hero.stats.cbetTurnOpp,
+                cbetTurnCount: hero.stats.cbetTurnCount,
+                cbetRiverOpp: hero.stats.cbetRiverOpp,
+                cbetRiverCount: hero.stats.cbetRiverCount,
+                stealOpp: hero.stats.stealOpp,
+                stealCount: hero.stats.stealCount,
+                foldToStealOpp: hero.stats.foldToStealOpp,
+                foldToStealCount: hero.stats.foldToStealCount,
+                foldToThreeBetOpp: hero.stats.foldToThreeBetOpp,
+                foldToThreeBetCount: hero.stats.foldToThreeBetCount,
+                showdownsReached: hero.stats.showdownsReached,
+                showdownsWon: hero.stats.showdownsWon,
+                positionalStats: hero.stats.positionalStats
             };
 
             if (mode === 'tournament' && tournamentRef.current) {
@@ -176,9 +193,10 @@ export const GamePage: React.FC = () => {
                 sessionData.chipsWon = prize - tm.config.buyIn; // In tournaments, chipsWon represents actual profit/loss
             }
 
-            StorageService.saveSession(sessionData);
+            await StorageService.saveSession(sessionData);
 
-            const savedHands: import('../services/StorageService').SavedHand[] = game.state.sessionHands.map((h, index) => ({
+            const allSessionHands = [...accumulatedHands, ...game.state.sessionHands];
+            const savedHands: import('../services/StorageService').SavedHand[] = allSessionHands.map((h, index) => ({
                 id: `${sessionData.id}_hand_${index}`,
                 sessionId: sessionData.id,
                 handNumber: h.handNumber,
@@ -193,7 +211,7 @@ export const GamePage: React.FC = () => {
                 actionLog: h.actionLog
             }));
             if (savedHands.length > 0) {
-                StorageService.saveHands(savedHands);
+                await StorageService.saveHands(savedHands);
             }
         }
 
@@ -278,6 +296,13 @@ export const GamePage: React.FC = () => {
                 // If the table is game over in tournament, advance the tournament
                 tournamentRef.current.advanceTournament();
                 setTournamentInfo({ ...tournamentRef.current.state });
+
+                if (tournamentRef.current.state.heroPlacement) {
+                    game.state.isGameOver = true;
+                    setTick(t => t + 1);
+                    return;
+                }
+
                 const nextTable = tournamentRef.current.getHeroTable();
                 
                 if (!tournamentRef.current.state.isActive) {
@@ -303,13 +328,27 @@ export const GamePage: React.FC = () => {
         if (mode === 'tournament' && tournamentRef.current) {
             tournamentRef.current.advanceTournament();
             setTournamentInfo({ ...tournamentRef.current.state });
+
+            if (tournamentRef.current.state.heroPlacement) {
+                game.state.isGameOver = true;
+                setTick(t => t + 1);
+                return;
+            }
+
+            // Check if we just hit the final table
+            if (tournamentRef.current.tables.length === 1 && !hasSeenFinalTable) {
+                setHasSeenFinalTable(true);
+                setShowFinalTableAnnouncement(true);
+            }
+
             const nextTable = tournamentRef.current.getHeroTable();
             if (nextTable && nextTable !== game) {
                 // Rebalanced
+                setAccumulatedHands(prev => [...prev, ...game.state.sessionHands]);
                 setGame(nextTable);
                 nextTable.startNewHand();
-                setCountdown(AUTO_NEXT_HAND_DELAY);
                 setTick(t => t + 1);
+                setShowShowdown(false);
                 setTimeout(() => SoundManager.playDeal(), 100);
                 return;
             }
@@ -332,7 +371,18 @@ export const GamePage: React.FC = () => {
     if (!game) return <div className="text-white flex items-center justify-center h-screen">Loading Table...</div>;
 
     if (game.state.isGameOver) {
-        return <GameOverScreen players={game.state.players} onPlayAgain={handleLeaveGame} />;
+        let placement, prize;
+        if (mode === 'tournament' && tournamentRef.current) {
+            placement = tournamentRef.current.state.heroPlacement;
+            prize = tournamentRef.current.state.heroPrize;
+        }
+        return <GameOverScreen 
+            players={game.state.players} 
+            onPlayAgain={handleLeaveGame}
+            isTournament={mode === 'tournament'}
+            tournamentPlacement={placement}
+            tournamentPrize={prize}
+        />;
     }
 
     const hero = game.state.players.find(p => p.isHuman);
@@ -341,9 +391,14 @@ export const GamePage: React.FC = () => {
     const isPlayerTurn = game.state.activePlayerId === hero.id && hero.status === 'active';
     const callAmount = game.state.currentBet - hero.currentBet;
     const canCheck = callAmount <= 0;
+    const isFinalTable = mode === 'tournament' && tournamentRef.current?.tables.length === 1;
 
     return (
         <div className="flex flex-col h-screen bg-gray-900 text-white overflow-hidden">
+            {showFinalTableAnnouncement && (
+                <FinalTableAnnouncement onComplete={() => setShowFinalTableAnnouncement(false)} />
+            )}
+
             {/* Header */}
             <div className="p-4 flex justify-between items-center bg-gray-800 shadow-md z-10">
                 <div className="flex items-center gap-4">
@@ -397,6 +452,7 @@ export const GamePage: React.FC = () => {
                 <PokerTable
                     gameState={game.state}
                     mode={mode}
+                    isFinalTable={isFinalTable}
                     onBuyIn={mode === 'cash' ? (playerId) => {
                         game.buyIn(playerId, INITIAL_CHIPS);
                         setTick(t => t + 1);
@@ -434,10 +490,10 @@ export const GamePage: React.FC = () => {
 
             {/* Session Dashboard */}
             {showDashboard && (
-                <SessionDashboard
-                    sessionHands={game.state.sessionHands}
-                    hero={hero}
-                    onClose={() => setShowDashboard(false)}
+                <SessionDashboard 
+                    hero={hero} 
+                    sessionHands={[...accumulatedHands, ...game.state.sessionHands]}
+                    onClose={() => setShowDashboard(false)} 
                 />
             )}
         </div>

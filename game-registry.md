@@ -33,3 +33,17 @@ Last updated: 2026-07-07
 
 **Pattern notes:**
 Tournaments are fixed at 50 players with a 10 buy-in. Payout calculations are strictly defined to reward the top 15% of the field. Any new tournament types must adhere to similar ITM percentage ranges.
+
+### Data Entities (SavedSession & SavedHand)
+
+File: `src/services/StorageService.ts`
+Last updated: 2026-07-08
+
+| Property | Value |
+| --- | --- |
+| Session Mode | 'cash' or 'tournament' |
+| Hand PnL Trackers | `heroNetWon`, `heroShowdownWon`, `heroNonShowdownWon` |
+| Local Storage Structure | `database/<username>/<mode>/sessions/<date>/sess_xxx.json` |
+
+**Pattern notes:**
+Any new game mechanics or action loops that modify the hero's stack MUST accurately separate the profit/loss into `heroShowdownWon` and `heroNonShowdownWon`. This ensures the Statistics Engine can accurately draw the Red Line (Non-Showdown) and Blue Line (Showdown) graphs without discrepancies.

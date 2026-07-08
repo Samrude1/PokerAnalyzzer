@@ -3,9 +3,12 @@ import { Player } from '../game/types';
 interface GameOverScreenProps {
     players: Player[];
     onPlayAgain: () => void;
+    tournamentPlacement?: number;
+    tournamentPrize?: number;
+    isTournament?: boolean;
 }
 
-export function GameOverScreen({ players, onPlayAgain }: GameOverScreenProps) {
+export function GameOverScreen({ players, onPlayAgain, tournamentPlacement, tournamentPrize, isTournament }: GameOverScreenProps) {
     const sortedPlayers = [...players].sort((a, b) => b.chips - a.chips);
     const winner = sortedPlayers[0];
 
@@ -17,9 +20,18 @@ export function GameOverScreen({ players, onPlayAgain }: GameOverScreenProps) {
 
                 {/* Winner Announcement */}
                 <h1 className="text-2xl font-bold text-poker-gold text-center mb-1">Game Over!</h1>
-                <h2 className="text-lg text-white text-center mb-4">
-                    <span className="text-poker-gold">{winner.name}</span> wins!
-                </h2>
+                {isTournament && tournamentPlacement ? (
+                    <div className="text-center mb-4">
+                        <h2 className="text-lg text-white">
+                            You finished in <span className="text-poker-gold font-bold">#{tournamentPlacement}</span> place!
+                        </h2>
+                        {tournamentPrize ? <div className="text-green-400 font-bold mt-1">Prize: ${tournamentPrize}</div> : null}
+                    </div>
+                ) : (
+                    <h2 className="text-lg text-white text-center mb-4">
+                        <span className="text-poker-gold">{winner.name}</span> wins!
+                    </h2>
+                )}
 
                 {/* Final Standings - Compact */}
                 <div className="bg-gray-900/50 rounded-lg p-3 mb-4 border border-poker-gold/20">
@@ -57,7 +69,7 @@ export function GameOverScreen({ players, onPlayAgain }: GameOverScreenProps) {
                     onClick={onPlayAgain}
                     className="w-full px-8 py-3 bg-gradient-to-r from-poker-gold to-yellow-600 rounded-full text-black font-extrabold text-lg shadow-xl hover:scale-105 transition-transform"
                 >
-                    Play Again
+                    {isTournament ? 'Return to Lobby' : 'Play Again'}
                 </button>
             </div>
         </div>

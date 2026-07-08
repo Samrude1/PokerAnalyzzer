@@ -18,7 +18,22 @@ export class OpponentProfiler {
             callsCount: 0,
             sessionPnL: 0,
             showdownsReached: 0,
-            showdownsWon: 0
+            showdownsWon: 0,
+            sawFlopCount: 0,
+            wonWhenSawFlopCount: 0,
+            cbetFlopOpp: 0,
+            cbetFlopCount: 0,
+            cbetTurnOpp: 0,
+            cbetTurnCount: 0,
+            cbetRiverOpp: 0,
+            cbetRiverCount: 0,
+            stealOpp: 0,
+            stealCount: 0,
+            foldToStealOpp: 0,
+            foldToStealCount: 0,
+            foldToThreeBetOpp: 0,
+            foldToThreeBetCount: 0,
+            positionalStats: {}
         };
     }
 
@@ -35,9 +50,68 @@ export class OpponentProfiler {
         if (putMoneyInPot) player.stats.vpipCount++;
         if (raisedPreFlop) player.stats.pfrCount++;
 
+        // Positional Stats Update
+        if (player.position) {
+            if (!player.stats.positionalStats[player.position]) {
+                player.stats.positionalStats[player.position] = {
+                    handsPlayed: 0, vpipCount: 0, pfrCount: 0, threeBetCount: 0,
+                    stealOpp: 0, stealCount: 0, foldToStealOpp: 0, foldToStealCount: 0
+                };
+            }
+            const posStats = player.stats.positionalStats[player.position];
+            posStats.handsPlayed++;
+            if (putMoneyInPot) posStats.vpipCount++;
+            if (raisedPreFlop) posStats.pfrCount++;
+        }
+
         // Recalculate percentages
         player.stats.vpip = (player.stats.vpipCount / player.stats.handsPlayed) * 100;
         player.stats.pfr = (player.stats.pfrCount / player.stats.handsPlayed) * 100;
+    }
+
+    static updateSteal(player: Player, isOpportunity: boolean, isSteal: boolean, facedSteal: boolean, foldedToSteal: boolean) {
+        if (!player.stats) player.stats = this.initializeStats();
+        
+        if (isOpportunity) {
+            player.stats.stealOpp++;
+            if (player.position && player.stats.positionalStats[player.position]) {
+                player.stats.positionalStats[player.position].stealOpp++;
+            }
+        }
+        if (isSteal) {
+            player.stats.stealCount++;
+            if (player.position && player.stats.positionalStats[player.position]) {
+                player.stats.positionalStats[player.position].stealCount++;
+            }
+        }
+        
+        if (facedSteal) {
+            player.stats.foldToStealOpp++;
+            if (player.position && player.stats.positionalStats[player.position]) {
+                player.stats.positionalStats[player.position].foldToStealOpp++;
+            }
+            if (foldedToSteal) {
+                player.stats.foldToStealCount++;
+                if (player.position && player.stats.positionalStats[player.position]) {
+                    player.stats.positionalStats[player.position].foldToStealCount++;
+                }
+            }
+        }
+    }
+
+    static updateCBet(player: Player, street: 'flop' | 'turn' | 'river', isOpportunity: boolean, isCBet: boolean) {
+        if (!player.stats) player.stats = this.initializeStats();
+
+        if (isOpportunity) {
+            if (street === 'flop') player.stats.cbetFlopOpp++;
+            if (street === 'turn') player.stats.cbetTurnOpp++;
+            if (street === 'river') player.stats.cbetRiverOpp++;
+        }
+        if (isCBet) {
+            if (street === 'flop') player.stats.cbetFlopCount++;
+            if (street === 'turn') player.stats.cbetTurnCount++;
+            if (street === 'river') player.stats.cbetRiverCount++;
+        }
     }
 
     /**

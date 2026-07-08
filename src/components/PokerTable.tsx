@@ -7,9 +7,10 @@ interface PokerTableProps {
     gameState: GameState;
     onBuyIn?: (playerId: string) => void;
     mode?: 'cash' | 'tournament';
+    isFinalTable?: boolean;
 }
 
-export function PokerTable({ gameState, onBuyIn, mode }: PokerTableProps) {
+export function PokerTable({ gameState, onBuyIn, mode, isFinalTable }: PokerTableProps) {
     // Leave empty seats for eliminated bots instead of shrinking the table visually
     const { rotatedPlayers } = useMemo(() => {
         const active = gameState.players.map(p => {
@@ -71,10 +72,16 @@ export function PokerTable({ gameState, onBuyIn, mode }: PokerTableProps) {
     }, [gameState.communityCards.length]);
 
     return (
-        <div className="relative w-full max-w-5xl aspect-[2/1] bg-poker-felt rounded-[80px] border-[12px] border-poker-felt/50 shadow-[inset_0_0_80px_rgba(0,0,0,0.5)] flex items-center justify-center mx-auto">
+        <div className={`relative w-full max-w-5xl aspect-[2/1] rounded-[80px] border-[12px] shadow-[inset_0_0_80px_rgba(0,0,0,0.5)] flex items-center justify-center mx-auto transition-colors duration-1000 ${
+            isFinalTable 
+                ? 'bg-red-800 border-red-900/80 shadow-[inset_0_0_100px_rgba(150,0,0,0.4)]'
+                : 'bg-poker-felt border-poker-felt/50'
+        }`}>
             {/* Felt Texture/Logo */}
-            <div className="absolute font-serif text-poker-gold/20 text-6xl font-bold select-none pointer-events-none">
-                POKER
+            <div className={`absolute font-serif text-6xl font-bold select-none pointer-events-none transition-colors duration-1000 ${
+                isFinalTable ? 'text-black/20' : 'text-poker-gold/20'
+            }`}>
+                {isFinalTable ? 'FINAL TABLE' : 'POKER'}
             </div>
 
             {/* Community Cards */}

@@ -25,6 +25,34 @@ export interface PlayerStats {
     aggressionsCount: number; // Bets + Raises
     callsCount: number;
 
+    // Advanced Metrics
+    sawFlopCount: number;
+    wonWhenSawFlopCount: number;
+    cbetFlopOpp: number;
+    cbetFlopCount: number;
+    cbetTurnOpp: number;
+    cbetTurnCount: number;
+    cbetRiverOpp: number;
+    cbetRiverCount: number;
+    stealOpp: number;
+    stealCount: number;
+    foldToStealOpp: number;
+    foldToStealCount: number;
+    foldToThreeBetOpp: number;
+    foldToThreeBetCount: number;
+
+    // Positional breakdown
+    positionalStats: Record<string, {
+        handsPlayed: number;
+        vpipCount: number;
+        pfrCount: number;
+        threeBetCount: number;
+        stealOpp: number;
+        stealCount: number;
+        foldToStealOpp: number;
+        foldToStealCount: number;
+    }>;
+
     // Session Tracking
     sessionPnL: number;
     showdownsReached: number;
@@ -51,6 +79,10 @@ export interface Player {
     // Temp flags for current hand stats tracking
     hasVPIPInHand?: boolean;
     hasPFRInHand?: boolean;
+    sawFlop?: boolean;
+    isPreflopAggressor?: boolean;
+    facedSteal?: boolean;
+    facedThreeBet?: boolean;
     handContribution: number; // Total chips put into pot this hand (for P/L tracking)
 }
 

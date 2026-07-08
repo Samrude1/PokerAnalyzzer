@@ -1,36 +1,35 @@
-# Memory — Local JSON Database & Stats Separation
+# Memory — Leakfinder Dashboard & Advanced Profiling
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 ## What was built
 
-- **Local JSON Backend**: Created a Node.js Express server (`server/server.js`) that persists all users, sessions, and hands to a permanent `database.json` file.
-- **Registration & Auth**: Overhauled `LoginPage.tsx` and `AuthContext.tsx` to support real user registration with passwords, hitting the new local backend API.
-- **Async Storage**: Converted `StorageService.ts` from synchronous `localStorage` to async `fetch()` calls to the backend API. Updated UI components (`HomePage.tsx`, `ImportPage.tsx`) to handle async data loading.
-- **Stats Separation**: Updated `TournamentManager.ts` and `GamePage.tsx` to track `mode` (cash vs tournament). Tournaments now accurately record net profit (prize - buy-in), placement, and total players.
-- **HUD Update**: Replaced Session Profit/Loss with M-Ratio tracking in the in-game HUD.
-- **Concurrent Dev Environment**: Updated `package.json` to use `concurrently`, launching both the Vite frontend and Node backend simultaneously with `npm run dev`.
+- **Advanced Profiling Engine**: Expanded `PokerGame.ts`, `OpponentProfiler.ts`, and `ShowdownResolver.ts` to track granular metrics during hand progression: C-Bet (Flop/Turn/River), ATS (Attempt to Steal), Fold-to-Steal, and Showdown metrics (WTSD%, W$SD, W$WSF).
+- **Hand Descriptions**: Added `heroHandDescription` tracking to showdowns so the UI can log the explicit textual strength of a hand (e.g., "Full House").
+- **Leakfinder Dashboard**: Built a completely new "Global Leakfinder" UI on `StatisticsPage.tsx` utilizing `recharts`. It dynamically visualizes C-Bet tendencies, warns of leaks like "Calling Station" behavior using Showdown ratios, and includes a full Positional Matrix (VPIP/PFR/ATS per seat).
+- **Session Navigation**: Overhauled the UX on the Statistics page so that the global Leakfinder is the default view. Added a "🌍 Global Leakfinder" button to explicitly return to the global view after reviewing a specific session.
 
 ## Decisions made
 
-- **Database Choice**: Chose a flat `.json` file over SQLite or IndexedDB to provide extreme simplicity while solving the "browser cache clear" data loss problem.
-- **Authentication Security**: Since this is a local toy app for friends, passwords are saved in plain text in `database.json` to keep the backend extremely lightweight.
-- **UI Stats**: `HomePage.tsx` defaults to displaying Cash Game stats, but toggles to a completely different layout for Tournament stats (showing ITM% and Net Profit).
+- **Standardized Initialization**: Replaced manual stat object assignments scattered across the codebase with a unified call to `OpponentProfiler.initializeStats()`. This guarantees all entities (Hero and Bots) always have complex sub-structures like `positionalStats` properly defined.
+- **Default Dashboard State**: Disabled the automatic selection of the first session on the Statistics page to ensure the overarching analytical Leakfinder is the first thing a player sees upon entering.
 
 ## Problems solved
 
-- Fixed the `AuthContext` bug where a new random user ID was generated on every login, causing data loss.
-- Addressed `HomePage` rendering before async sessions were loaded by implementing a loading state and `useEffect`.
+- **Runtime Crashes**: Solved `Cannot read properties of undefined (reading 'CO')` during steals by updating `TournamentManager.ts` and `GamePage.tsx` to instantiate bot and hero stats correctly using `initializeStats()`.
+- **JSX Compilation Error**: Fixed a Vite hot-reload break caused by an unescaped `>` symbol in the JSX leakfinder text.
+- **Duplicate UI Rendering**: Fixed a bug where the old "Lifetime Cash Game Stats" was unconditionally rendering on top of the selected session's Profit & Loss graph.
 
 ## Current state
 
-- The game is fully functional with a permanent local backend.
-- Registration works, stats are correctly separated by mode, and data persists securely on the local hard drive.
+- The game features a complete, Poker Tracker-style analytics suite.
+- Positional, C-Bet, and Showdown data correctly accumulate during hands and are serialized to session JSON files for lifetime aggregation.
+- The UI handles the rendering of both global analytics and granular single-session reviews cleanly.
 
 ## Next session starts with
 
-- Implementing the next major roadmap feature, such as the **Leak finder with automated analysis** or the **Hand database with search/filter**.
+- Fulfilling the pending user request: Making the **Tournament Final Table** visually distinct (e.g., changing the table texture to red) to give players a clear indication that they have reached the final phase.
 
 ## Open questions
 
-- None at the moment.
+- Are there any other specific stats or Leakfinder warnings the user wants to add to the dashboard?

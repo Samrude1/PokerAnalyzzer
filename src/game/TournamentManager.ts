@@ -1,5 +1,6 @@
 import { PokerGame } from './PokerGame';
 import { Player, TournamentState, TournamentConfig, BlindLevel, BotDifficulty } from './types';
+import { OpponentProfiler } from './OpponentProfiler';
 
 // Default Blind Structure
 const DEFAULT_BLIND_STRUCTURE: BlindLevel[] = [
@@ -71,11 +72,7 @@ export class TournamentManager {
                 role: 'none',
                 isHuman: false,
                 hasActed: false,
-                stats: {
-                    vpip: 0, pfr: 0, af: 0, handsPlayed: 0, handsWon: 0,
-                    vpipCount: 0, pfrCount: 0, threeBetCount: 0, threeBetOpportunity: 0,
-                    aggressionsCount: 0, callsCount: 0, sessionPnL: 0, showdownsReached: 0, showdownsWon: 0
-                },
+                stats: OpponentProfiler.initializeStats(),
                 handContribution: 0
             };
             this.allPlayers.push(bot);

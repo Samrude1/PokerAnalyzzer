@@ -93,12 +93,15 @@ Real-time poker statistics displayed for each player:
 - Automatic hand metadata extraction
 - Session data merging with local stats
 
-### 📈 Analytics Dashboard
+### 📈 Analytics Dashboard & Leakfinder
 
+- **Global Leakfinder view** aggregating lifetime data
+- **Positional Statistics Matrix** (VPIP/PFR/ATS per position)
+- **C-Bet drop-off charts** (Flop vs Turn vs River)
+- **Showdown Math alerts** (WTSD% vs W$SD, W$WSF)
 - **Session performance graphs** with Recharts
 - **Profit/loss tracking** over time
 - **Hand history viewer** with detailed breakdowns
-- **Positional statistics** table
 - **Export functionality** for session data
 
 ### 💾 Local Database System
@@ -532,9 +535,9 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 - [x] Advanced HUD (3-Bet%, AF, WTSD, W$SD)
 - [x] Profit/loss graphs (EV, Showdown, Non-Showdown)
 - [x] Hand action log and details modal
+- [x] Leak finder with automated analysis (C-Bet drop-offs, Showdown Math, Positional Matrix)
 
-### 🔄 In Progress (v1.3.0)
-- [ ] Leak finder with automated analysis
+### 🔄 In Progress (v1.4.0)
 - [ ] Hand database with search/filter
 
 ### 🔮 Future Plans (v2.0+)

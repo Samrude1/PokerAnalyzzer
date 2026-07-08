@@ -236,6 +236,25 @@ app.post('/api/sessions', async (req, res) => {
     res.json({ success: true });
 });
 
+// Delete Session
+app.delete('/api/sessions/:sessionId', async (req, res) => {
+    const sessionId = req.params.sessionId;
+    const filePath = sessionIdToFile[sessionId];
+    
+    if (filePath) {
+        try {
+            await fs.unlink(filePath);
+            delete sessionIdToFile[sessionId];
+            res.json({ success: true });
+        } catch (e) {
+            console.error("Error deleting session:", e);
+            res.status(500).json({ error: 'Failed to delete session' });
+        }
+    } else {
+        res.status(404).json({ error: 'Session not found' });
+    }
+});
+
 // Get Hands
 app.get('/api/hands/:sessionId', async (req, res) => {
     const sessionId = req.params.sessionId;
