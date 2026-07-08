@@ -90,7 +90,7 @@ export const GamePage: React.FC = () => {
 
         const hero: Player = {
             id: 'p1',
-            name: user?.name || 'Hero',
+            name: user?.username || 'Hero',
             chips: INITIAL_CHIPS,
             initialChips: INITIAL_CHIPS,
             totalBuyIn: INITIAL_CHIPS,
@@ -126,7 +126,7 @@ export const GamePage: React.FC = () => {
         }
 
         return new PokerGame([hero, ...bots]);
-    }, [tableType, mode, user?.name]);
+    }, [tableType, mode, user?.username]);
 
     // Initialize Game
     useEffect(() => {
@@ -148,7 +148,7 @@ export const GamePage: React.FC = () => {
         // Save Session
         const hero = game.state.players.find(p => p.isHuman);
         if (hero && user) {
-            let sessionData = {
+            let sessionData: import('../services/StorageService').SavedSession = {
                 id: sessionId.current,
                 userId: user.id,
                 date: sessionStartTime.current,
@@ -161,7 +161,7 @@ export const GamePage: React.FC = () => {
             if (mode === 'tournament' && tournamentRef.current) {
                 const tm = tournamentRef.current;
                 let placement = tm.state.heroPlacement;
-                let prize = tm.state.heroPrize;
+                let prize = tm.state.heroPrize || 0;
                 
                 // If they give up while alive
                 if (!placement) {
@@ -379,6 +379,7 @@ export const GamePage: React.FC = () => {
             <div className="flex-1 flex items-center justify-center relative bg-black/20 p-4">
                 <PokerTable
                     gameState={game.state}
+                    mode={mode}
                     onBuyIn={mode === 'cash' ? (playerId) => {
                         game.buyIn(playerId, INITIAL_CHIPS);
                         setTick(t => t + 1);

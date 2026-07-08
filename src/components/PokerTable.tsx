@@ -5,10 +5,11 @@ import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 
 interface PokerTableProps {
     gameState: GameState;
-    onBuyIn: (playerId: string) => void;
+    onBuyIn?: (playerId: string) => void;
+    mode?: 'cash' | 'tournament';
 }
 
-export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
+export function PokerTable({ gameState, onBuyIn, mode }: PokerTableProps) {
     // Leave empty seats for eliminated bots instead of shrinking the table visually
     const { rotatedPlayers } = useMemo(() => {
         const active = gameState.players.map(p => {
@@ -119,6 +120,7 @@ export function PokerTable({ gameState, onBuyIn }: PokerTableProps) {
                         isDealer={isDealer}
                         animateCards={animateCards}
                         onBuyIn={onBuyIn}
+                        mode={mode}
                         totalSeats={Math.max(6, rotatedPlayers.length)}
                         smallBlind={gameState.smallBlindAmount}
                         bigBlind={gameState.bigBlindAmount}

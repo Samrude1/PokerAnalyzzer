@@ -16,6 +16,7 @@ interface SeatProps {
     totalSeats?: number;
     smallBlind?: number;
     bigBlind?: number;
+    mode?: 'cash' | 'tournament';
 }
 
 const getPositions = (total: number) => {
@@ -85,7 +86,8 @@ export const Seat = React.memo(function Seat({
     maxBuyIn = 200,
     totalSeats = 6,
     smallBlind,
-    bigBlind
+    bigBlind,
+    mode = 'cash'
 }: SeatProps) {
     
     // Calculate stats on every render to avoid stale data from mutated object references
@@ -107,6 +109,8 @@ export const Seat = React.memo(function Seat({
             ? (player.chips / (smallBlind + bigBlind)).toFixed(1)
             : '0.0';
 
+        const winnings = player.chips - player.totalBuyIn;
+
         stats = {
             hands: h,
             vpip,
@@ -117,7 +121,9 @@ export const Seat = React.memo(function Seat({
             wtsd,
             wsd,
             mRatio,
-            mRatioColor: parseFloat(mRatio) >= 15 ? 'text-green-400' : parseFloat(mRatio) <= 5 ? 'text-red-400' : 'text-yellow-400'
+            mRatioColor: parseFloat(mRatio) >= 15 ? 'text-green-400' : parseFloat(mRatio) <= 5 ? 'text-red-400' : 'text-yellow-400',
+            winnings,
+            winningsColor: winnings > 0 ? 'text-green-400' : winnings < 0 ? 'text-red-400' : 'text-gray-400'
         };
     }
 
@@ -248,13 +254,19 @@ export const Seat = React.memo(function Seat({
                             <span className="text-gray-500">|</span>
                             <span className="text-green-300" title="W$SD">W$:{stats.wsd}</span>
                         </div>
-                        {/* Row 3: Hands Played | M-Ratio */}
+                        {/* Row 3: Hands Played | M-Ratio or Winnings */}
                         <div className="flex gap-1 bg-black/70 px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm border border-gray-700 whitespace-nowrap">
                             <span className="text-gray-300" title="Hands Played">H:{stats.hands}</span>
                             <span className="text-gray-500">|</span>
-                            <span className={stats.mRatioColor} title="M-Ratio">
-                                M:{stats.mRatio}
-                            </span>
+                            {mode === 'tournament' ? (
+                                <span className={stats.mRatioColor} title="M-Ratio">
+                                    M:{stats.mRatio}
+                                </span>
+                            ) : (
+                                <span className={stats.winningsColor} title="Session PnL">
+                                    W:${stats.winnings > 0 ? '+' : ''}{stats.winnings}
+                                </span>
+                            )}
                         </div>
                     </div>
                 )}

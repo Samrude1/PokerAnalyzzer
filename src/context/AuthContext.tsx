@@ -26,7 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const stored = localStorage.getItem('poker_user');
         if (stored) {
             try {
-                setUser(JSON.parse(stored));
+                const parsed = JSON.parse(stored);
+                // Migrate old 'name' to 'username' if necessary
+                if (parsed.name && !parsed.username) {
+                    parsed.username = parsed.name;
+                }
+                setUser(parsed);
             } catch (e) {
                 console.error("Failed to parse user", e);
             }

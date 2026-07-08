@@ -7,7 +7,6 @@ export const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [sessions, setSessions] = useState<SavedSession[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [mode, setMode] = useState<'cash' | 'tournament'>('cash');
 
     useEffect(() => {
@@ -16,7 +15,6 @@ export const HomePage: React.FC = () => {
                 const data = await StorageService.getSessions(user.id);
                 setSessions(data);
             }
-            setIsLoading(false);
         };
         loadSessions();
     }, [user]);
@@ -41,10 +39,10 @@ export const HomePage: React.FC = () => {
             <div className="flex justify-between items-center p-6 bg-gray-800 shadow-md z-10">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center font-bold text-xl">
-                        {user?.name.charAt(0).toUpperCase()}
+                        {user?.username?.charAt(0).toUpperCase() || '?'}
                     </div>
                     <div>
-                        <div className="font-bold">{user?.name}</div>
+                        <div className="font-bold">{user?.username}</div>
                         <div className="text-xs text-poker-gold uppercase tracking-wider">{user?.isPro ? 'Pro Member' : 'Free Tier'}</div>
                     </div>
                 </div>
