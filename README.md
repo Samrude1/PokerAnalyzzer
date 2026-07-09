@@ -1,8 +1,8 @@
-# 🃏 Poker Trainer
+# 🃏 Poker Analytics Engine
 
-A professional-grade No-Limit Hold'em poker training simulator with intelligent AI opponents. Supports both 6-max cash games and 9-max Multi-Table Tournaments (MTT). Built as a portfolio project demonstrating advanced React, TypeScript, and game AI development skills.
+A **full-stack AI coaching platform** for No-Limit Hold'em, combining a realistic 6-max/MTT poker simulator with a cloud-powered AI analyst. The core engineering challenge: making an LLM provide **mathematically accurate, hallucination-free** poker coaching by building a **Deterministic Pre-computation Engine** between the game state and the language model.
 
-![Poker Trainer Screenshot](./screenshot.png)
+Built by a winning cash-game player who used domain expertise to validate and eliminate LLM hallucinations at the source.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)](https://www.typescriptlang.org/)
@@ -13,6 +13,7 @@ A professional-grade No-Limit Hold'em poker training simulator with intelligent 
 
 ## 📋 Table of Contents
 
+- [AI Architecture](#-ai-architecture--the-core-engineering-problem)
 - [About](#-about)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
@@ -21,26 +22,60 @@ A professional-grade No-Limit Hold'em poker training simulator with intelligent 
 - [Game Engine Architecture](#-game-engine-architecture)
 - [AI Bot System](#-ai-bot-system)
 - [Testing](#-testing)
-- [Deployment](#-deployment)
 - [Roadmap](#-roadmap)
-- [Contributing](#-contributing)
 - [License](#-license)
+
+---
+
+## 🤖 AI Architecture — The Core Engineering Problem
+
+Large Language Models hallucinate when forced to reason about dynamic game states. They miscount pots, confuse preflop actions (iso-raise vs 3-bet), and invent hand strengths. The solution is not prompting harder — it is building a **computation layer between the game and the model**.
+
+### The Pipeline
+
+```
+Game Engine (TypeScript)
+    ↓
+OpponentProfiler.ts  →  Tracks VPIP, PFR, AF, Fold-to-Cbet per player in real-time
+HandAnalyzer.js      →  Classifies hand strength, action types, board texture deterministically
+HandNarrator.js      →  Serializes verified facts into structured context strings
+    ↓
+AIAnalyzer.js        →  Aggregates session stats and constructs token-efficient LLM payload
+    ↓
+OpenRouter API       →  Claude 3.5 Sonnet receives verified facts, never raw game state
+    ↓
+Streamed GTO Analysis
+```
+
+### Key Design Decisions
+
+| Problem | Solution |
+|---|---|
+| LLM hallucinates pot size and hand strength | `HandAnalyzer.js` pre-computes all facts before LLM sees any data |
+| Token cost explodes with full hand histories | Leak Finder uses aggregated stat matrix only — no raw hands sent |
+| LLM confuses iso-raise with 3-bet | Deterministic action classifier labels every preflop action before injection |
+| Analysis ignores opponent types | `OpponentProfiler.ts` builds per-player statistical profile (Nit/TAG/LAG/Fish) |
+
+### Advanced HUD Metrics Tracked
+
+The game engine tracks and persists to local JSON: VPIP, PFR, 3-Bet %, Flop/Turn/River C-Bet %, Fold to Steal, Fold to 3-Bet, Fold to Flop C-Bet, Aggression Factor (AF), WTSD %, W$SD %, W$WSF % — matching professional tracking software (PokerTracker, Hold'em Manager) output.
+
+> **Architecture Note:** Originally built on **Ollama** for full local inference. Pivoted to **OpenRouter** after finding consumer GPUs insufficient for elite-level poker analysis quality. Game engine remains 100% local; only LLM calls are cloud-routed.
 
 ---
 
 ## 🎯 About
 
-**Poker Trainer** is a **free, open-source** poker training application where you can practice against AI opponents with distinct playing styles. The bots use position-aware strategies, board texture analysis, and adaptive decision-making to provide a realistic poker experience.
+**Poker Analytics Engine** is a full-stack training and analysis platform combining a realistic NLHE simulator with a professional-grade AI coaching layer.
 
 This project demonstrates:
-- **Complex game state management** with React Context
-- **Advanced AI algorithms** for poker decision-making
-- **Hand evaluation** and equity calculation
-- **Statistical tracking** and analytics
-- **Responsive UI/UX** with TailwindCSS
-- **Comprehensive testing** with Vitest
+- **Deterministic Pre-computation** to eliminate LLM hallucinations in domain-specific contexts
+- **Context-window engineering** — injecting verified, structured facts instead of raw data
+- **Full-stack architecture** — TypeScript game engine, Node.js/Express backend, React UI
+- **Statistical HUD system** — real-time opponent profiling matching professional poker software
+- **Domain-validated AI** — built and QA'd by an experienced winning player
 
-**Built with:** React 18 • TypeScript • Vite • TailwindCSS • Recharts
+**Built with:** React 18 • TypeScript • Vite • TailwindCSS • Node.js • OpenRouter
 
 ---
 
