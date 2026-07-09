@@ -62,11 +62,19 @@ export interface SavedHand {
 }
 
 export class StorageService {
+    private static getHeaders(): HeadersInit {
+        const token = localStorage.getItem('poker_token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+    }
+
     static async saveSession(session: SavedSession): Promise<void> {
         try {
             await fetch('/api/sessions', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getHeaders(),
                 body: JSON.stringify(session)
             });
         } catch (e) {
@@ -77,7 +85,8 @@ export class StorageService {
     static async deleteSession(sessionId: string): Promise<void> {
         try {
             await fetch(`/api/sessions/${sessionId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: this.getHeaders()
             });
         } catch (e) {
             console.error("Failed to delete session", e);
@@ -85,9 +94,11 @@ export class StorageService {
     }
 
     static async getSessions(userId?: string): Promise<SavedSession[]> {
-        if (!userId) return [];
+        // userId parameter kept for backwards compatibility but not sent to API
         try {
-            const res = await fetch(`/api/sessions/${userId}`);
+            const res = await fetch(`/api/sessions`, {
+                headers: this.getHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch');
             return await res.json();
         } catch (e) {
@@ -104,7 +115,7 @@ export class StorageService {
         try {
             await fetch('/api/hands', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getHeaders(),
                 body: JSON.stringify({ hands: newHands })
             });
         } catch (e) {
@@ -115,7 +126,9 @@ export class StorageService {
     static async getHands(sessionId?: string): Promise<SavedHand[]> {
         if (!sessionId) return [];
         try {
-            const res = await fetch(`/api/hands/${sessionId}`);
+            const res = await fetch(`/api/hands/${sessionId}`, {
+                headers: this.getHeaders()
+            });
             if (!res.ok) throw new Error('Failed to fetch');
             return await res.json();
         } catch (e) {

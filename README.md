@@ -111,11 +111,12 @@ Real-time poker statistics displayed for each player:
 - **Global Leak Finder:** The AI analyzes your lifetime VPIP/PFR stats and your 40 most impactful hands to identify your biggest strategic leaks.
 - **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
 
-### 💾 Local Database System
+### 💾 Secure Backend System
 
-- **Local Node.js Server**: Built-in Express backend runs alongside the game.
-- **Persistent Directory Structure**: Player stats, hands, and sessions are beautifully organized into user-friendly folders (e.g., `database/<username>/cash/sessions/<date>/sess_123.json`) for easy parsing and external analytics, replacing the old single `database.json`.
-- **User Registration**: Secure local profiles with passwords so friends can play on the same machine without mixing up their stats.
+- **Express.js API**: Built-in backend server running on Node.js to persist data securely.
+- **Stateless Authentication**: Uses JWT (JSON Web Tokens) to verify users and protect routes from unauthorized access.
+- **Strict Validation**: All API inputs are rigorously validated at runtime using `Zod` schemas.
+- **Local JSON Database**: Player stats, hands, and sessions are cleanly organized into `database/<username>/cash/sessions/` directories.
 
 ---
 

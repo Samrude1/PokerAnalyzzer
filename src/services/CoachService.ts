@@ -1,4 +1,12 @@
 export class CoachService {
+    private static getHeaders(): HeadersInit {
+        const token = localStorage.getItem('poker_token');
+        return {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+    }
+
     static async checkHealth() {
         try {
             const res = await fetch('http://localhost:3001/api/coach/health');
@@ -13,7 +21,7 @@ export class CoachService {
         try {
             const res = await fetch('http://localhost:3001/api/coach/index', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getHeaders(),
                 body: JSON.stringify({ userId })
             });
             return await res.json();
@@ -26,7 +34,7 @@ export class CoachService {
         try {
             const res = await fetch('http://localhost:3001/api/coach/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: this.getHeaders(),
                 body: JSON.stringify({ userId, question, actionType, contextSessionId })
             });
 

@@ -463,6 +463,14 @@ export class ProStrategy extends AdvancedStrategy {
  * Routes decision making to the appropriate strategy based on the bot's configured difficulty.
  */
 export class BotLogic {
+    // Cache strategy instances to prevent GC pauses
+    private static strategies: Record<string, BotStrategy> = {
+        'beginner': new BeginnerStrategy(),
+        'intermediate': new IntermediateStrategy(),
+        'advanced': new AdvancedStrategy(),
+        'pro': new ProStrategy()
+    };
+
     /**
      * Central entry point for all AI decisions.
      * Evaluates SBR (Stack-to-Blind Ratio) independently to enforce push/fold mechanics for short stacks.
@@ -476,16 +484,7 @@ export class BotLogic {
         const canCheck = callCost === 0;
 
         const difficulty = bot.difficulty || 'advanced';
-        
-        let strategy: BotStrategy;
-        switch (difficulty) {
-            case 'beginner': strategy = new BeginnerStrategy(); break;
-            case 'intermediate': strategy = new IntermediateStrategy(); break;
-            case 'pro': strategy = new ProStrategy(); break;
-            case 'advanced': 
-            default: 
-                strategy = new AdvancedStrategy(); break;
-        }
+        const strategy = this.strategies[difficulty] || this.strategies['advanced'];
 
         // Delegate to specific phase logic
         let decision = gameState.phase === 'pre-flop' 

@@ -5,12 +5,17 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { AIAnalyzer } from './services/AIAnalyzer.js';
+import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev';
 
 // The root database directory
 const DB_DIR = path.join(__dirname, '..', 'database');
@@ -18,8 +23,31 @@ const USERS_FILE = path.join(DB_DIR, 'users.json');
 const OLD_DB_PATH = path.join(__dirname, 'database.json');
 
 const app = express();
-app.use(cors());
+
+// Security Headers
+app.use(helmet());
+
+// Strict CORS
+const corsOptions = {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
 app.use(express.json({ limit: '10mb' }));
+
+// Rate Limiters
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // Limit each IP to 20 login/register requests per window
+    message: { error: 'Too many authentication attempts. Please try again later.' }
+});
+
+const coachLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50, // Limit each IP to 50 coach requests per window
+    message: { error: 'Coach rate limit exceeded. Please try again later.' }
+});
 
 const aiAnalyzer = new AIAnalyzer(DB_DIR);
 
@@ -142,12 +170,55 @@ async function writeSessionFile(filePath, data) {
     await fs.writeFile(filePath, JSON.stringify(data, null, 4), 'utf-8');
 }
 
+// --- Validation Schemas ---
+const RegisterSchema = z.object({
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be at least 6 characters")
+});
+
+const LoginSchema = z.object({
+    username: z.string(),
+    password: z.string()
+});
+
+const SessionSchema = z.object({
+    id: z.string(),
+    userId: z.string().optional(),
+    mode: z.string().optional(),
+    date: z.string()
+}).passthrough();
+
+const HandsSchema = z.object({
+    hands: z.any()
+});
+
+const ChatSchema = z.object({
+    question: z.string(),
+    actionType: z.string().optional(),
+    contextSessionId: z.string().optional()
+});
+
+// --- Middleware ---
+function verifyToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) return res.status(401).json({ error: 'Unauthorized: No token provided' });
+    
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Forbidden: Invalid token' });
+        req.user = user;
+        next();
+    });
+}
+
 // --- API Endpoints ---
 
 // Register
-app.post('/api/register', async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
+app.post('/api/register', authLimiter, async (req, res) => {
+    const parsed = RegisterSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    const { username, password } = parsed.data;
 
     if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
         return res.status(400).json({ error: 'Username already exists' });
@@ -163,26 +234,30 @@ app.post('/api/register', async (req, res) => {
     users.push(newUser);
     await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 4), 'utf-8');
 
+    const token = jwt.sign({ id: newUser.id, username: newUser.username }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userSafe } = newUser;
-    res.json(userSafe);
+    res.json({ ...userSafe, token });
 });
 
 // Login
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
+app.post('/api/login', authLimiter, async (req, res) => {
+    const parsed = LoginSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    const { username, password } = parsed.data;
     
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (!user || user.password !== password) {
         return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...userSafe } = user;
-    res.json(userSafe);
+    res.json({ ...userSafe, token });
 });
 
 // Get Sessions
-app.get('/api/sessions/:userId', async (req, res) => {
-    const user = users.find(u => u.id === req.params.userId);
+app.get('/api/sessions', verifyToken, async (req, res) => {
+    const user = users.find(u => u.id === req.user.id);
     if (!user) return res.json([]);
 
     const username = user.username.toLowerCase();
@@ -215,9 +290,14 @@ app.get('/api/sessions/:userId', async (req, res) => {
 });
 
 // Save Session
-app.post('/api/sessions', async (req, res) => {
-    const session = req.body;
-    const user = users.find(u => u.id === session.userId);
+app.post('/api/sessions', verifyToken, async (req, res) => {
+    const parsed = SessionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    
+    const session = parsed.data;
+    session.userId = req.user.id; // Enforce security, ignore client payload userId
+
+    const user = users.find(u => u.id === req.user.id);
     if (!user) return res.status(400).json({ error: 'User not found' });
 
     const username = user.username.toLowerCase();
@@ -248,11 +328,17 @@ app.post('/api/sessions', async (req, res) => {
 });
 
 // Delete Session
-app.delete('/api/sessions/:sessionId', async (req, res) => {
+app.delete('/api/sessions/:sessionId', verifyToken, async (req, res) => {
     const sessionId = req.params.sessionId;
     const filePath = sessionIdToFile[sessionId];
     
     if (filePath) {
+        const user = users.find(u => u.id === req.user.id);
+        const usernameFolder = user ? `/${user.username.toLowerCase()}/` : '';
+        const usernameFolderWin = user ? `\\${user.username.toLowerCase()}\\` : '';
+        if (!user || (!filePath.includes(usernameFolder) && !filePath.includes(usernameFolderWin))) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
         try {
             await fs.unlink(filePath);
             delete sessionIdToFile[sessionId];
@@ -267,7 +353,7 @@ app.delete('/api/sessions/:sessionId', async (req, res) => {
 });
 
 // Get Hands
-app.get('/api/hands/:sessionId', async (req, res) => {
+app.get('/api/hands/:sessionId', verifyToken, async (req, res) => {
     const sessionId = req.params.sessionId;
     const filePath = sessionIdToFile[sessionId];
     
@@ -281,8 +367,11 @@ app.get('/api/hands/:sessionId', async (req, res) => {
 });
 
 // Save Hands
-app.post('/api/hands', async (req, res) => {
-    const { hands } = req.body;
+app.post('/api/hands', verifyToken, async (req, res) => {
+    const parsed = HandsSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input' });
+    
+    const { hands } = parsed.data;
     if (!hands || hands.length === 0) return res.json({ success: true });
     
     const handsArray = Array.isArray(hands) ? hands : [hands];
@@ -319,12 +408,12 @@ app.get('/api/coach/health', async (req, res) => {
 });
 
 // Chat Stream
-app.post('/api/coach/chat', async (req, res) => {
-    const { userId, question, actionType, contextSessionId } = req.body;
+app.post('/api/coach/chat', verifyToken, coachLimiter, async (req, res) => {
+    const parsed = ChatSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.issues });
+    const { question, actionType, contextSessionId } = parsed.data;
     
-    if (!userId) {
-        return res.status(400).json({ error: 'Missing userId' });
-    }
+    const userId = req.user.id;
     
     // Validate user exists (security check)
     const user = users.find(u => u.id === userId);

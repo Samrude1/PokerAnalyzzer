@@ -53,9 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error(data.error || 'Login failed');
             }
 
-            const userData = await res.json();
-            setUser(userData);
-            localStorage.setItem('poker_user', JSON.stringify(userData));
+            const data = await res.json();
+            const { token, ...userSafe } = data;
+            setUser(userSafe);
+            localStorage.setItem('poker_user', JSON.stringify(userSafe));
+            if (token) localStorage.setItem('poker_token', token);
         } finally {
             setIsLoading(false);
         }
@@ -75,9 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 throw new Error(data.error || 'Registration failed');
             }
 
-            const userData = await res.json();
-            setUser(userData);
-            localStorage.setItem('poker_user', JSON.stringify(userData));
+            const data = await res.json();
+            const { token, ...userSafe } = data;
+            setUser(userSafe);
+            localStorage.setItem('poker_user', JSON.stringify(userSafe));
+            if (token) localStorage.setItem('poker_token', token);
         } finally {
             setIsLoading(false);
         }
@@ -86,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         setUser(null);
         localStorage.removeItem('poker_user');
+        localStorage.removeItem('poker_token');
     };
 
     return (
