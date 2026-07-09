@@ -40,6 +40,8 @@ export interface PlayerStats {
     foldToStealCount: number;
     foldToThreeBetOpp: number;
     foldToThreeBetCount: number;
+    foldToCbetOpp: number;
+    foldToCbetCount: number;
 
     // Positional breakdown
     positionalStats: Record<string, {
@@ -83,6 +85,7 @@ export interface Player {
     isPreflopAggressor?: boolean;
     facedSteal?: boolean;
     facedThreeBet?: boolean;
+    facedCbet?: boolean;
     handContribution: number; // Total chips put into pot this hand (for P/L tracking)
 }
 

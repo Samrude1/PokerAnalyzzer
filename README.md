@@ -108,7 +108,7 @@ Real-time poker statistics displayed for each player:
 
 - **Cloud LLM Integration:** Powered by OpenRouter to route complex poker queries to elite models (e.g., Claude 3.5 Sonnet).
 - **Session Review:** Ask the AI to review a specific session. It will analyze your hands, point out mistakes (like bad preflop calls or poor sizing), and provide brutal, GTO-approved advice.
-- **Global Leak Finder:** The AI analyzes your lifetime VPIP/PFR stats and your 40 most impactful hands to identify your biggest strategic leaks.
+- **Global Leak Finder:** The AI performs a purely data-driven analysis of your lifetime stats, analyzing advanced HUD metrics (Fold to 3-Bet, Fold to C-Bet, W$WSF, AF, etc.) to identify precise strategic leaks without getting bogged down in individual hand histories.
 - **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
 - **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination and drastically reduce context window token usage by offloading raw token-heavy computations to the local runtime.
 
@@ -552,7 +552,7 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 - [x] Position-based AI strategies
 - [x] Board texture analysis
 - [x] Opponent profiling
-- [x] Advanced HUD (3-Bet%, AF, WTSD, W$SD)
+- [x] Advanced HUD (3-Bet%, AF, WTSD, W$SD, W$WSF, Fold to Steal/3-Bet/C-Bet)
 - [x] Profit/loss graphs (EV, Showdown, Non-Showdown)
 - [x] Hand action log and details modal
 - [x] Leak finder with automated analysis (C-Bet drop-offs, Showdown Math, Positional Matrix)

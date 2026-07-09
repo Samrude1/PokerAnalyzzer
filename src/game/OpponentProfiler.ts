@@ -33,6 +33,8 @@ export class OpponentProfiler {
             foldToStealCount: 0,
             foldToThreeBetOpp: 0,
             foldToThreeBetCount: 0,
+            foldToCbetOpp: 0,
+            foldToCbetCount: 0,
             positionalStats: {}
         };
     }
@@ -171,6 +173,13 @@ export class OpponentProfiler {
             if (isVPIP && !player.hasVPIPInHand) player.hasVPIPInHand = true;
             if (isPFR && !player.hasPFRInHand) player.hasPFRInHand = true;
 
+            if (player.facedThreeBet) {
+                if (!player.stats) player.stats = this.initializeStats();
+                player.stats.foldToThreeBetOpp++;
+                if (action === 'fold') player.stats.foldToThreeBetCount++;
+                player.facedThreeBet = false;
+            }
+
             const facingRaise = gameState.currentBet > gameState.bigBlindAmount;
             if (facingRaise) {
                 if (player.facedSteal) {
@@ -228,6 +237,21 @@ export class OpponentProfiler {
                 
                 if (action === 'check') {
                     player.isPreflopAggressor = false;
+                }
+
+                if (isCBet && gameState.phase === 'flop') {
+                    gameState.players.forEach((p: any) => {
+                        if (p.id !== player.id && p.status === 'active') {
+                            p.facedCbet = true;
+                        }
+                    });
+                }
+            } else {
+                if (player.facedCbet && gameState.phase === 'flop') {
+                    if (!player.stats) player.stats = this.initializeStats();
+                    player.stats.foldToCbetOpp++;
+                    if (action === 'fold') player.stats.foldToCbetCount++;
+                    player.facedCbet = false;
                 }
             }
             

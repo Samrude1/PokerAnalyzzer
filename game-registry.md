@@ -64,3 +64,19 @@ Last updated: 2026-07-09
 
 **Pattern notes:**
 The AI Coach is built to be 100% local for privacy and offline usage via Ollama. Because it runs on consumer hardware (e.g. 4GB VRAM), we strictly limit RAG context to TopK=2 and use lightweight 4B parameter models. The vector database is intentionally kept as a simple JSON file rather than importing heavy dependencies. All new AI features must adhere to these lightweight constraints, provide context filtering to avoid massive context windows, and always stream text via SSE to prevent UX freezes.
+
+### HUD Tracking Metrics
+
+File: src/game/OpponentProfiler.ts
+Last updated: 2026-07-09
+
+| Property | Description |
+| --- | --- |
+| foldToSteal | Folds in SB/BB vs Late Position open. |
+| foldToThreeBet | Folds vs re-raise preflop after VPIP/PFR. |
+| foldToCbet | Folds on flop vs preflop aggressor bet. |
+| cbetTurn / cbetRiver | Multi-barreling frequencies for aggressor. |
+| wonWhenSawFlopCount | Number of hands won when reaching post-flop. |
+
+**Pattern notes:**
+These metrics are incremented individually per player in the game state loop. AIAnalyzer aggregates them from the session files across all history to construct the GLOBAL STATS payload for the Leak Finder. Future statistical additions must follow this two-step architecture (Game Engine OpponentProfiler -> Session JSON -> AIAnalyzer Aggregation).

@@ -55,11 +55,34 @@ export class AIAnalyzer {
                     }
                 }
             } else if (actionType === 'leakfinder') {
-                const allHands = [];
-                let totalHandsPlayed = 0;
-                let totalChipsWon = 0;
-                let vpipCount = 0;
-                let pfrCount = 0;
+                let statsAcc = {
+                    totalHandsPlayed: 0,
+                    totalChipsWon: 0,
+                    vpipCount: 0,
+                    pfrCount: 0,
+                    threeBetCount: 0,
+                    threeBetOpportunity: 0,
+                    cbetFlopOpp: 0,
+                    cbetFlopCount: 0,
+                    aggressionsCount: 0,
+                    callsCount: 0,
+                    sawFlopCount: 0,
+                    showdownsReached: 0,
+                    showdownsWon: 0,
+                    stealOpp: 0,
+                    stealCount: 0,
+                    foldToStealOpp: 0,
+                    foldToStealCount: 0,
+                    foldToThreeBetOpp: 0,
+                    foldToThreeBetCount: 0,
+                    foldToCbetOpp: 0,
+                    foldToCbetCount: 0,
+                    wonWhenSawFlopCount: 0,
+                    cbetTurnOpp: 0,
+                    cbetTurnCount: 0,
+                    cbetRiverOpp: 0,
+                    cbetRiverCount: 0
+                };
                 
                 let modeFilter = null;
                 if (contextSessionId === 'global-cash') modeFilter = 'cash';
@@ -70,33 +93,71 @@ export class AIAnalyzer {
                     if (fileData && fileData.session.userId === user.id) {
                         if (modeFilter && fileData.session.mode !== modeFilter) continue;
 
-                        totalHandsPlayed += fileData.session.handsPlayed || 0;
-                        totalChipsWon += fileData.session.chipsWon || 0;
-                        if (fileData.hands) {
-                            allHands.push(...fileData.hands);
-                        }
+                        const s = fileData.session;
+                        statsAcc.totalHandsPlayed += s.handsPlayed || 0;
+                        statsAcc.totalChipsWon += s.chipsWon || 0;
+                        statsAcc.vpipCount += s.vpipCount || 0;
+                        statsAcc.pfrCount += s.pfrCount || 0;
+                        statsAcc.threeBetCount += s.threeBetCount || 0;
+                        statsAcc.threeBetOpportunity += s.threeBetOpportunity || 0;
+                        statsAcc.cbetFlopOpp += s.cbetFlopOpp || 0;
+                        statsAcc.cbetFlopCount += s.cbetFlopCount || 0;
+                        statsAcc.aggressionsCount += s.aggressionsCount || 0;
+                        statsAcc.callsCount += s.callsCount || 0;
+                        statsAcc.sawFlopCount += s.sawFlopCount || 0;
+                        statsAcc.showdownsReached += s.showdownsReached || 0;
+                        statsAcc.showdownsWon += s.showdownsWon || 0;
+                        statsAcc.stealOpp += s.stealOpp || 0;
+                        statsAcc.stealCount += s.stealCount || 0;
+                        statsAcc.foldToStealOpp += s.foldToStealOpp || 0;
+                        statsAcc.foldToStealCount += s.foldToStealCount || 0;
+                        statsAcc.foldToThreeBetOpp += s.foldToThreeBetOpp || 0;
+                        statsAcc.foldToThreeBetCount += s.foldToThreeBetCount || 0;
+                        statsAcc.foldToCbetOpp += s.foldToCbetOpp || 0;
+                        statsAcc.foldToCbetCount += s.foldToCbetCount || 0;
+                        statsAcc.wonWhenSawFlopCount += s.wonWhenSawFlopCount || 0;
+                        statsAcc.cbetTurnOpp += s.cbetTurnOpp || 0;
+                        statsAcc.cbetTurnCount += s.cbetTurnCount || 0;
+                        statsAcc.cbetRiverOpp += s.cbetRiverOpp || 0;
+                        statsAcc.cbetRiverCount += s.cbetRiverCount || 0;
                     }
                 }
                 
-                for (const h of allHands) {
-                    const isVpip = h.actionLog.some(log => (log.startsWith(`${user.username} calls`) || log.startsWith(`${user.username} raises`)) && !log.includes('--- FLOP ---'));
-                    const isPfr = h.actionLog.some(log => log.startsWith(`${user.username} raises`) && !log.includes('--- FLOP ---'));
-                    if (isVpip) vpipCount++;
-                    if (isPfr) pfrCount++;
-                }
+                const pct = (num, den) => den > 0 ? ((num / den) * 100).toFixed(1) : 0;
                 
-                const vpipPercent = totalHandsPlayed > 0 ? ((vpipCount / totalHandsPlayed) * 100).toFixed(1) : 0;
-                const pfrPercent = totalHandsPlayed > 0 ? ((pfrCount / totalHandsPlayed) * 100).toFixed(1) : 0;
+                const vpipPercent = pct(statsAcc.vpipCount, statsAcc.totalHandsPlayed);
+                const pfrPercent = pct(statsAcc.pfrCount, statsAcc.totalHandsPlayed);
+                const threeBetPercent = pct(statsAcc.threeBetCount, statsAcc.threeBetOpportunity);
+                const cbetPercent = pct(statsAcc.cbetFlopCount, statsAcc.cbetFlopOpp);
+                const turnCbetPercent = pct(statsAcc.cbetTurnCount, statsAcc.cbetTurnOpp);
+                const riverCbetPercent = pct(statsAcc.cbetRiverCount, statsAcc.cbetRiverOpp);
+                const wtsdPercent = pct(statsAcc.showdownsReached, statsAcc.sawFlopCount);
+                const wsdPercent = pct(statsAcc.showdownsWon, statsAcc.showdownsReached);
+                const wwsfPercent = pct(statsAcc.wonWhenSawFlopCount, statsAcc.sawFlopCount);
+                const stealPercent = pct(statsAcc.stealCount, statsAcc.stealOpp);
+                const foldToStealPercent = pct(statsAcc.foldToStealCount, statsAcc.foldToStealOpp);
+                const foldToThreeBetPercent = pct(statsAcc.foldToThreeBetCount, statsAcc.foldToThreeBetOpp);
+                const foldToCbetPercent = pct(statsAcc.foldToCbetCount, statsAcc.foldToCbetOpp);
+                const af = statsAcc.callsCount > 0 ? (statsAcc.aggressionsCount / statsAcc.callsCount).toFixed(2) : statsAcc.aggressionsCount;
                 
-                const stats = `GLOBAL STATS (${modeFilter ? modeFilter.toUpperCase() : 'ALL TIME'})\nTotal Hands: ${totalHandsPlayed}\nTotal Chips Won: ${totalChipsWon}\nVPIP: ${vpipPercent}%\nPFR: ${pfrPercent}%\n`;
-
-                allHands.sort((a, b) => Math.abs(b.heroNetWon || 0) - Math.abs(a.heroNetWon || 0));
-                
-                const profiles = HandAnalyzer.classifyPlayers(allHands, user.username);
-                const topHands = allHands.slice(0, 40);
-                const handsStr = topHands.map(h => HandNarrator.narrateHand(h, user.username, profiles)).join('\n\n');
-                    
-                contextText = stats + '\n\nMOST IMPACTFUL HANDS:\n' + handsStr;
+                contextText = `GLOBAL STATS (${modeFilter ? modeFilter.toUpperCase() : 'ALL TIME'})
+Total Hands: ${statsAcc.totalHandsPlayed}
+Net Result: ${statsAcc.totalChipsWon} chips
+VPIP: ${vpipPercent}%
+PFR: ${pfrPercent}%
+3-Bet: ${threeBetPercent}%
+Flop C-Bet: ${cbetPercent}%
+Turn C-Bet: ${turnCbetPercent}%
+River C-Bet: ${riverCbetPercent}%
+Attempt to Steal: ${stealPercent}%
+Fold to Steal: ${foldToStealPercent}%
+Fold to 3-Bet: ${foldToThreeBetPercent}%
+Fold to Flop C-Bet: ${foldToCbetPercent}%
+Aggression Factor (AF): ${af}
+Went to Showdown (WTSD): ${wtsdPercent}%
+Won $ at Showdown (W$SD): ${wsdPercent}%
+Won $ When Saw Flop (W$WSF): ${wwsfPercent}%
+`;
             } else {
                 // Standard Chat
                 if (contextSessionId && !contextSessionId.startsWith('global-')) {
@@ -130,7 +191,7 @@ export class AIAnalyzer {
             }
 
             if (actionType === 'leakfinder') {
-                systemPrompt += " You are an elite AI Poker Coach performing a Global Leak Finder analysis. Review the provided global stats and most impactful hands. Identify the biggest strategic leaks in the player's game (e.g., VPIP too high, calling 3-bets out of position, overplaying weak top pairs). Be specific, reference the hands to back up your claims, and offer actionable, GTO-approved advice.\n\nCRITICAL INSTRUCTION: Provide a clear, structured analysis. Do not include internal thought processes.";
+                systemPrompt += " You are an elite AI Poker Coach performing a Global Leak Finder analysis based purely on the player's cumulative database statistics. Review the provided global stats. Identify the biggest strategic leaks in the player's game based on their VPIP/PFR gap, 3-bet frequency, aggression factor (AF), C-bet frequencies (flop/turn/river), response to aggression (Fold to 3-Bet, Fold to C-Bet, Fold to Steal), and showdown metrics (WTSD, W$SD, W$WSF). Be extremely analytical, explain what their specific statistical profile indicates about their playstyle, and offer actionable, GTO-approved advice to fix the leaks identified in the numbers.\n\nCRITICAL INSTRUCTION: Provide a clear, structured analysis focusing on the numbers. Do not ask for individual hand histories.";
             } else if (actionType === 'session_review') {
                 systemPrompt += " You are an elite AI Poker Coach performing a Session Review. Review the provided session context and ALL provided hands. Summarize the session, point out the best plays, and brutally identify areas for improvement. Point out bad calls, poor sizings, and positional awareness mistakes. Use modern poker terminology (c-bet, blockers, pot odds, equity).\n\nCRITICAL INSTRUCTION: Provide a clear, structured review. Do not include internal thought processes.";
             } else {
