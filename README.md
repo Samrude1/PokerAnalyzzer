@@ -110,7 +110,7 @@ Real-time poker statistics displayed for each player:
 - **Session Review:** Ask the AI to review a specific session. It will analyze your hands, point out mistakes (like bad preflop calls or poor sizing), and provide brutal, GTO-approved advice.
 - **Global Leak Finder:** The AI analyzes your lifetime VPIP/PFR stats and your 40 most impactful hands to identify your biggest strategic leaks.
 - **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
-- **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination.
+- **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination and drastically reduce context window token usage by offloading raw token-heavy computations to the local runtime.
 
 > **Architecture Note:** Originally, the AI Coach was built to run entirely locally using **Ollama** to ensure complete data privacy. However, we found that local consumer GPUs struggled to run models smart enough for elite poker analysis at a reasonable speed. We pivoted to **OpenRouter** to unlock access to top-tier cloud models (like Claude 3.5 Sonnet) while keeping the game engine itself 100% local.
 
@@ -134,7 +134,7 @@ Real-time poker statistics displayed for each player:
 
 ### Backend & Database
 - **Node.js** & **Express** - Local API server
-- **fs (File System)** - JSON database persistence (`database.json`)
+- **fs (File System)** - Local JSON database (organized by player and mode)
 - **OpenRouter API** - Cloud LLM routing for the AI Coach
 
 ### Build Tools
@@ -170,6 +170,12 @@ cd poker-trainer
 
 # Install dependencies
 npm install
+
+# Copy environment variables template
+cp .env.example .env
+
+# Open .env and add your OpenRouter API key:
+# OPENROUTER_API_KEY=your_key_here
 
 # Start development server
 npm run dev
@@ -207,7 +213,7 @@ npm run lint
    - **Pro** - All LAG bots
 4. Start playing!
 
-> ⚠️ **Note:** The data is saved locally on your computer inside `server/database.json`. Your stats are safe even if you clear your browser cache!
+> ⚠️ **Note:** The data is securely saved locally on your computer inside the `server/database/` folder. Your stats are safe even if you clear your browser cache!
 
 ---
 
@@ -238,6 +244,8 @@ poker-trainer/
 │   │   ├── OpponentProfiler.ts   # Player tendency tracking
 │   │   ├── OpponentProfiler.test.ts
 │   │   ├── PokerGame.ts          # Main game state machine
+│   │   ├── ShowdownResolver.ts   # Pot distribution and analytics
+│   │   ├── TournamentManager.ts  # Multi-table management
 │   │   └── types.ts              # TypeScript interfaces
 │   │
 │   ├── pages/               # Route pages
@@ -309,7 +317,7 @@ graph TD
     subgraph Data_Layer [Data & Persistence]
         Storage[StorageService.ts API Client]
         Server[Local Node.js Express Server]
-        JSON[(database.json)]
+        JSON[(database/)]
         
         State -->|Save/Load| Storage
         Storage <-->|HTTP fetch| Server
