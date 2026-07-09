@@ -112,6 +112,8 @@ Real-time poker statistics displayed for each player:
 - **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
 - **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination.
 
+> **Architecture Note:** Originally, the AI Coach was built to run entirely locally using **Ollama** to ensure complete data privacy. However, we found that local consumer GPUs struggled to run models smart enough for elite poker analysis at a reasonable speed. We pivoted to **OpenRouter** to unlock access to top-tier cloud models (like Claude 3.5 Sonnet) while keeping the game engine itself 100% local.
+
 ### 💾 Secure Backend System
 
 - **Express.js API**: Built-in backend server running on Node.js to persist data securely.
