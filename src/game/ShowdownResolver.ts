@@ -37,6 +37,8 @@ export class ShowdownResolver {
 
                 state.sessionHands.push({
                     handNumber: state.handNumber,
+                    heroStartingStack: hero.chips + hero.handContribution,
+                    bigBlindAmount: state.bigBlindAmount,
                     heroNetWon,
                     heroShowdownWon: 0,
                     heroNonShowdownWon: heroNetWon,
@@ -118,6 +120,8 @@ export class ShowdownResolver {
 
             state.sessionHands.push({
                 handNumber: state.handNumber,
+                heroStartingStack: hero.chips + hero.handContribution,
+                bigBlindAmount: state.bigBlindAmount,
                 heroNetWon,
                 heroShowdownWon: isShowdown ? heroNetWon : 0,
                 heroNonShowdownWon: isShowdown ? 0 : heroNetWon,

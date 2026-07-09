@@ -110,6 +110,7 @@ Real-time poker statistics displayed for each player:
 - **Session Review:** Ask the AI to review a specific session. It will analyze your hands, point out mistakes (like bad preflop calls or poor sizing), and provide brutal, GTO-approved advice.
 - **Global Leak Finder:** The AI analyzes your lifetime VPIP/PFR stats and your 40 most impactful hands to identify your biggest strategic leaks.
 - **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
+- **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination.
 
 ### 💾 Secure Backend System
 

@@ -1,4 +1,5 @@
 const suitSymbols = { 's': '♠', 'h': '♥', 'd': '♦', 'c': '♣' };
+import { HandAnalyzer } from './HandAnalyzer.js';
 
 function formatCard(cardStr) {
     if (!cardStr || cardStr.length < 2) return cardStr;
@@ -13,13 +14,23 @@ function formatCards(cards) {
 }
 
 export class HandNarrator {
-    static narrateHand(hand, username = "Player") {
+    static narrateHand(hand, username = "Player", profiles = null) {
         let narrative = `Hand #${hand.handNumber}\n`;
         
         const position = hand.heroPosition ? `at ${hand.heroPosition}` : "at unknown position";
         narrative += `You (Hero) were ${position} holding [${formatCards(hand.heroCards)}].\n`;
         
+        if (hand.heroStartingStack && hand.bigBlindAmount) {
+            const bb = hand.bigBlindAmount;
+            const stackBB = (hand.heroStartingStack / bb).toFixed(1);
+            narrative += `Blinds: ${bb}. Your starting stack: ${hand.heroStartingStack} chips (${stackBB} BB).\n`;
+        }
+        
         narrative += `Final Pot Size: ${hand.potSize} chips.\n`;
+        
+        if (profiles) {
+            narrative += `\n${HandAnalyzer.analyzeHand(hand, username, profiles)}\n`;
+        }
         
         if (hand.boardCards && hand.boardCards.length > 0) {
             narrative += `Community cards: [${formatCards(hand.boardCards)}].\n`;

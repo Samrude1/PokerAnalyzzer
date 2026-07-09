@@ -428,4 +428,5 @@ const PORT = 3001;
 app.listen(PORT, async () => {
     await initDatabase();
     console.log(`Local Database Server running on http://localhost:${PORT}`);
-});
+}
+);

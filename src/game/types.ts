@@ -95,7 +95,9 @@ export interface WinnerInfo {
 
 export interface HandHistory {
     handNumber: number;
-    heroPosition?: Position; // Track position for this hand (NEW)
+    heroPosition?: Position; // Track position for this hand
+    heroStartingStack?: number; // Starting chips for this hand
+    bigBlindAmount?: number;    // Big blind amount for context
     heroNetWon: number;        // Green Line: Total won/lost this hand
     heroShowdownWon: number;    // Blue Line: Won at showdown
     heroNonShowdownWon: number; // Red Line: Won without showdown
