@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { GamePage } from './pages/GamePage';
 import { ImportPage } from './pages/ImportPage';
 import { StatisticsPage } from './pages/StatisticsPage';
+import { CoachPage } from './pages/CoachPage';
 
 function PrivateRoute({ children }: { children: JSX.Element }) {
     const { user, isLoading } = useAuth();
@@ -43,6 +44,11 @@ function App() {
                 <Route path="/stats" element={
                     <PrivateRoute>
                         <StatisticsPage />
+                    </PrivateRoute>
+                } />
+                <Route path="/coach" element={
+                    <PrivateRoute>
+                        <CoachPage />
                     </PrivateRoute>
                 } />
                 <Route path="*" element={<Navigate to="/" replace />} />

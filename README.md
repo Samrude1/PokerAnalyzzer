@@ -104,6 +104,13 @@ Real-time poker statistics displayed for each player:
 - **Hand history viewer** with detailed breakdowns
 - **Export functionality** for session data
 
+### 🧠 AI Poker Coach (OpenRouter)
+
+- **Cloud LLM Integration:** Powered by OpenRouter to route complex poker queries to elite models (e.g., Claude 3.5 Sonnet).
+- **Session Review:** Ask the AI to review a specific session. It will analyze your hands, point out mistakes (like bad preflop calls or poor sizing), and provide brutal, GTO-approved advice.
+- **Global Leak Finder:** The AI analyzes your lifetime VPIP/PFR stats and your 40 most impactful hands to identify your biggest strategic leaks.
+- **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
+
 ### 💾 Local Database System
 
 - **Local Node.js Server**: Built-in Express backend runs alongside the game.
@@ -124,6 +131,7 @@ Real-time poker statistics displayed for each player:
 ### Backend & Database
 - **Node.js** & **Express** - Local API server
 - **fs (File System)** - JSON database persistence (`database.json`)
+- **OpenRouter API** - Cloud LLM routing for the AI Coach
 
 ### Build Tools
 - **Vite 5.0** - Lightning-fast build tool
@@ -536,6 +544,7 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 - [x] Profit/loss graphs (EV, Showdown, Non-Showdown)
 - [x] Hand action log and details modal
 - [x] Leak finder with automated analysis (C-Bet drop-offs, Showdown Math, Positional Matrix)
+- [x] AI Poker Coach with OpenRouter LLM integration for Session Reviews
 
 ### 🔄 In Progress (v1.4.0)
 - [ ] Hand database with search/filter

@@ -1,11 +1,17 @@
 import express from 'express';
+import dotenv from 'dotenv';
 import cors from 'cors';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { AIAnalyzer } from './services/AIAnalyzer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 // The root database directory
 const DB_DIR = path.join(__dirname, '..', 'database');
 const USERS_FILE = path.join(DB_DIR, 'users.json');
@@ -14,6 +20,8 @@ const OLD_DB_PATH = path.join(__dirname, 'database.json');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+const aiAnalyzer = new AIAnalyzer(DB_DIR);
 
 // In-memory cache
 let users = [];
@@ -232,6 +240,9 @@ app.post('/api/sessions', async (req, res) => {
     
     // Update cache
     sessionIdToFile[session.id] = filePath;
+
+    // No more vector indexing
+    // ragPipeline.indexSession(user.id, session, user.username);
     
     res.json({ success: true });
 });
@@ -283,6 +294,12 @@ app.post('/api/hands', async (req, res) => {
         if (fileData) {
             fileData.hands.push(...handsArray);
             await writeSessionFile(filePath, fileData);
+
+            // No more vector indexing
+            // for (const h of handsArray) {
+            //     ragPipeline.indexHand(fileData.session.userId, h, username);
+            // }
+
             return res.json({ success: true });
         }
     } else {
@@ -292,6 +309,30 @@ app.post('/api/hands', async (req, res) => {
     }
     
     res.json({ success: true }); // Acknowledge to avoid client loop, even if failed
+});
+
+// --- AI Coach Endpoints ---
+
+// Check API Health
+app.get('/api/coach/health', async (req, res) => {
+    res.json({ status: 'online', models: { hasChat: true, hasEmbed: false } });
+});
+
+// Chat Stream
+app.post('/api/coach/chat', async (req, res) => {
+    const { userId, question, actionType, contextSessionId } = req.body;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'Missing userId' });
+    }
+    
+    // Validate user exists (security check)
+    const user = users.find(u => u.id === userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    await aiAnalyzer.analyze(user, question, res, actionType, contextSessionId, sessionIdToFile);
 });
 
 const PORT = 3001;

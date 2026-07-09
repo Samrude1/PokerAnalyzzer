@@ -47,3 +47,20 @@ Last updated: 2026-07-08
 
 **Pattern notes:**
 Any new game mechanics or action loops that modify the hero's stack MUST accurately separate the profit/loss into `heroShowdownWon` and `heroNonShowdownWon`. This ensures the Statistics Engine can accurately draw the Red Line (Non-Showdown) and Blue Line (Showdown) graphs without discrepancies.
+
+### AI Coach (Local RAG)
+
+File: `server/services/RAGPipeline.js` & `server/services/VectorStore.js`
+Last updated: 2026-07-09
+
+| Property | Value |
+| --- | --- |
+| Chat Model | `qwen3.5:4b` |
+| Embed Model | `nomic-embed-text` |
+| Vector DB | Custom JSON-backed Cosine Similarity |
+| RAG Context Limit | Top 2 hands per query |
+| Context Filtering | Specific `contextSessionId` or Global |
+| Chat Streaming | Server-Sent Events (SSE) via Express |
+
+**Pattern notes:**
+The AI Coach is built to be 100% local for privacy and offline usage via Ollama. Because it runs on consumer hardware (e.g. 4GB VRAM), we strictly limit RAG context to TopK=2 and use lightweight 4B parameter models. The vector database is intentionally kept as a simple JSON file rather than importing heavy dependencies. All new AI features must adhere to these lightweight constraints, provide context filtering to avoid massive context windows, and always stream text via SSE to prevent UX freezes.

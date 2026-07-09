@@ -54,6 +54,12 @@ export const HomePage: React.FC = () => {
                         <span>📊</span> Statistics
                     </button>
                     <button
+                        onClick={() => navigate('/coach')}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-bold transition flex items-center gap-2"
+                    >
+                        <span>🤖</span> AI Coach
+                    </button>
+                    <button
                         onClick={() => navigate('/import')}
                         className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-bold transition flex items-center gap-2"
                     >
