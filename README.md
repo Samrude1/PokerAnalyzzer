@@ -447,7 +447,7 @@ The `OpponentProfiler.ts` tracks:
 - Aggression factor
 - Showdown tendencies
 
-Bots adapt after 50-hand sample size.
+Bots adapt their strategy based on these profiles after a 15-hand sample.
 
 ---
 
