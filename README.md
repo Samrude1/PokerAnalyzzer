@@ -1,8 +1,6 @@
 # 🃏 Poker Analytics Engine
 
-A **full-stack AI coaching platform** for No-Limit Hold'em, combining a realistic 6-max/MTT poker simulator with a cloud-powered AI analyst. The core engineering challenge: making an LLM provide **mathematically accurate, hallucination-free** poker coaching by building a **Deterministic Pre-computation Engine** between the game state and the language model.
-
-Built by a winning cash-game player who used domain expertise to validate and eliminate LLM hallucinations at the source.
+A No-Limit Hold'em simulator with an AI coaching layer. Combines a browser-based poker game engine with a cloud LLM for hand analysis and leak detection.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue.svg)](https://www.typescriptlang.org/)
@@ -13,7 +11,6 @@ Built by a winning cash-game player who used domain expertise to validate and el
 
 ## 📋 Table of Contents
 
-- [AI Architecture](#-ai-architecture--the-core-engineering-problem)
 - [About](#-about)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
@@ -27,53 +24,15 @@ Built by a winning cash-game player who used domain expertise to validate and el
 
 ---
 
-## 🤖 AI Architecture — The Core Engineering Problem
-
-Large Language Models hallucinate when forced to reason about dynamic game states. They miscount pots, confuse preflop actions (iso-raise vs 3-bet), and invent hand strengths. The solution is not prompting harder — it is building a **computation layer between the game and the model**.
-
-### The Pipeline
-
-```
-Game Engine (TypeScript)
-    ↓
-OpponentProfiler.ts  →  Tracks VPIP, PFR, AF, Fold-to-Cbet per player in real-time
-HandAnalyzer.js      →  Classifies hand strength, action types, board texture deterministically
-HandNarrator.js      →  Serializes verified facts into structured context strings
-    ↓
-AIAnalyzer.js        →  Aggregates session stats and constructs token-efficient LLM payload
-    ↓
-OpenRouter API       →  Claude 3.5 Sonnet receives verified facts, never raw game state
-    ↓
-Streamed GTO Analysis
-```
-
-### Key Design Decisions
-
-| Problem | Solution |
-|---|---|
-| LLM hallucinates pot size and hand strength | `HandAnalyzer.js` pre-computes all facts before LLM sees any data |
-| Token cost explodes with full hand histories | Leak Finder uses aggregated stat matrix only — no raw hands sent |
-| LLM confuses iso-raise with 3-bet | Deterministic action classifier labels every preflop action before injection |
-| Analysis ignores opponent types | `OpponentProfiler.ts` builds per-player statistical profile (Nit/TAG/LAG/Fish) |
-
-### Advanced HUD Metrics Tracked
-
-The game engine tracks and persists to local JSON: VPIP, PFR, 3-Bet %, Flop/Turn/River C-Bet %, Fold to Steal, Fold to 3-Bet, Fold to Flop C-Bet, Aggression Factor (AF), WTSD %, W$SD %, W$WSF % — matching professional tracking software (PokerTracker, Hold'em Manager) output.
-
-> **Architecture Note:** Originally built on **Ollama** for full local inference. Pivoted to **OpenRouter** after finding consumer GPUs insufficient for elite-level poker analysis quality. Game engine remains 100% local; only LLM calls are cloud-routed.
-
----
-
 ## 🎯 About
 
-**Poker Analytics Engine** is a full-stack training and analysis platform combining a realistic NLHE simulator with a professional-grade AI coaching layer.
+**Poker Analytics Engine** is a training and analysis platform combining a realistic NLHE simulator with an AI coaching layer.
 
-This project demonstrates:
-- **Deterministic Pre-computation** to eliminate LLM hallucinations in domain-specific contexts
-- **Context-window engineering** — injecting verified, structured facts instead of raw data
+Core features:
+- **Deterministic Pre-computation** — hand strength, action types, and board texture are classified locally before being sent to the LLM, reducing hallucinations
+- **Context-window engineering** — the LLM receives structured, verified facts rather than raw game state
 - **Full-stack architecture** — TypeScript game engine, Node.js/Express backend, React UI
-- **Statistical HUD system** — real-time opponent profiling matching professional poker software
-- **Domain-validated AI** — built and QA'd by an experienced winning player
+- **Statistical HUD** — real-time opponent profiling (VPIP, PFR, AF, 3-Bet%, and more)
 
 **Built with:** React 18 • TypeScript • Vite • TailwindCSS • Node.js • OpenRouter
 
@@ -88,7 +47,7 @@ This project demonstrates:
 - **Position-based hand ranges** (UTG tight, BTN wide)
 - **Blind structure** with automatic dealer button rotation and tournament blind escalation
 - **Buy-in system** for rebuy functionality (cash games)
-- **Sound effects & animations** for immersive gameplay
+- **Sound effects & animations**
 
 ### 🤖 AI Opponents
 
@@ -141,13 +100,12 @@ Real-time poker statistics displayed for each player:
 
 ### 🧠 AI Poker Coach (OpenRouter)
 
-- **Cloud LLM Integration:** Powered by OpenRouter to route complex poker queries to elite models (e.g., Claude 3.5 Sonnet).
-- **Session Review:** Ask the AI to review a specific session. It will analyze your hands, point out mistakes (like bad preflop calls or poor sizing), and provide brutal, GTO-approved advice.
-- **Global Leak Finder:** The AI performs a purely data-driven analysis of your lifetime stats, analyzing advanced HUD metrics (Fold to 3-Bet, Fold to C-Bet, W$WSF, AF, etc.) to identify precise strategic leaks without getting bogged down in individual hand histories.
-- **Dynamic Context:** Bypasses basic RAG by intelligently injecting chronological session data directly into the LLM context window for deep strategic analysis.
-- **Deterministic Pre-computation Engine:** The backend accurately evaluates absolute hand strength (e.g., Ace-high vs Top Pair), identifies precise preflop actions (iso-raise vs 3-bet), and dynamically profiles opponent tendencies (LAG, TAG, Nit) to eliminate AI hallucination and drastically reduce context window token usage by offloading raw token-heavy computations to the local runtime.
+- **Cloud LLM integration** via OpenRouter (Claude 3.5 Sonnet)
+- **Session Review** — AI analyzes hands and highlights mistakes in preflop decisions, sizing, etc.
+- **Global Leak Finder** — data-driven analysis of lifetime stats using HUD metrics (Fold to 3-Bet, Fold to C-Bet, W$WSF, AF, etc.)
+- **Deterministic Pre-computation** — hand strength, action types, and opponent profiles are classified locally before LLM injection, reducing token usage and hallucinations
 
-> **Architecture Note:** Originally, the AI Coach was built to run entirely locally using **Ollama** to ensure complete data privacy. However, we found that local consumer GPUs struggled to run models smart enough for elite poker analysis at a reasonable speed. We pivoted to **OpenRouter** to unlock access to top-tier cloud models (like Claude 3.5 Sonnet) while keeping the game engine itself 100% local.
+> **Note:** Originally built on **Ollama** for local inference. Pivoted to **OpenRouter** for access to larger models. The game engine remains 100% local; only LLM calls are cloud-routed.
 
 ### 💾 Secure Backend System
 
@@ -255,71 +213,76 @@ npm run lint
 ## 📁 Project Structure
 
 ```
-poker-trainer/
+poker-app/
 ├── src/
-│   ├── components/          # React UI components
-│   │   ├── Card.tsx         # Playing card component
-│   │   ├── Controls.tsx     # Player action controls
+│   ├── components/              # React UI components
+│   │   ├── Card.tsx
+│   │   ├── Controls.tsx
+│   │   ├── FinalTableAnnouncement.tsx
 │   │   ├── GameOverScreen.tsx
 │   │   ├── HandDetailsModal.tsx
-│   │   ├── PokerTable.tsx   # Main table layout
+│   │   ├── PokerTable.tsx
 │   │   ├── PositionalStatsTable.tsx
-│   │   ├── Seat.tsx         # Player seat component
+│   │   ├── Seat.tsx
 │   │   ├── SessionDashboard.tsx
 │   │   └── ShowdownOverlay.tsx
 │   │
-│   ├── game/                # Game engine core
-│   │   ├── BoardAnalyzer.ts      # Board texture analysis
+│   ├── game/                    # Game engine core
+│   │   ├── BoardAnalyzer.ts          # Board texture analysis
 │   │   ├── BoardAnalyzer.test.ts
-│   │   ├── BotLogic.ts           # AI decision engine
+│   │   ├── BotLogic.ts               # AI decision engine
 │   │   ├── BotLogic.test.ts
-│   │   ├── Deck.ts               # Card deck management
-│   │   ├── HandEvaluator.ts      # Poker hand ranking
+│   │   ├── bot/                      # Bot strategy modules
+│   │   ├── Deck.ts                   # Card deck management
+│   │   ├── HandEvaluator.ts          # Poker hand ranking
 │   │   ├── HandEvaluator.test.ts
-│   │   ├── OpponentProfiler.ts   # Player tendency tracking
+│   │   ├── OpponentProfiler.ts       # Player tendency tracking
 │   │   ├── OpponentProfiler.test.ts
-│   │   ├── PokerGame.ts          # Main game state machine
-│   │   ├── ShowdownResolver.ts   # Pot distribution and analytics
-│   │   ├── TournamentManager.ts  # Multi-table management
-│   │   └── types.ts              # TypeScript interfaces
+│   │   ├── PokerGame.ts              # Main game state machine
+│   │   ├── ShowdownResolver.ts       # Pot distribution
+│   │   ├── TournamentManager.ts      # MTT management
+│   │   └── types.ts                  # TypeScript interfaces
 │   │
-│   ├── pages/               # Route pages
-│   │   ├── GamePage.tsx     # Main poker game
-│   │   ├── HomePage.tsx     # Table selection
-│   │   ├── ImportPage.tsx   # Hand history import
-│   │   └── LoginPage.tsx    # User authentication
+│   ├── pages/                   # Route pages
+│   │   ├── CoachPage.tsx        # AI Coach interface
+│   │   ├── GamePage.tsx         # Main poker game
+│   │   ├── HomePage.tsx         # Table selection
+│   │   ├── ImportPage.tsx       # Hand history import
+│   │   ├── LoginPage.tsx        # User authentication
+│   │   └── StatisticsPage.tsx   # Analytics & leakfinder
 │   │
-│   ├── context/             # React Context providers
-│   │   └── AuthContext.tsx  # User authentication state
+│   ├── context/                 # React Context providers
+│   │   └── AuthContext.tsx
 │   │
-│   ├── services/            # Data services
-│   │   └── StorageService.ts # LocalStorage persistence
+│   ├── hooks/                   # Custom React hooks
 │   │
-│   ├── utils/               # Utility functions
-│   │   ├── HandHistoryParser.ts  # PokerStars parser
-│   │   ├── SoundManager.ts       # Audio effects
-│   │   └── cn.ts                 # Class name utilities
+│   ├── layouts/                 # Layout components
 │   │
-│   ├── App.tsx              # Root component with routing
-│   ├── main.tsx             # Application entry point
-│   └── index.css            # Global styles
+│   ├── services/                # Data services
+│   │   ├── CoachService.ts
+│   │   └── StorageService.ts
+│   │
+│   ├── utils/                   # Utility functions
+│   │   ├── HandHistoryParser.ts
+│   │   ├── SoundManager.ts
+│   │   └── cn.ts
+│   │
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
 │
-├── docs/                    # Documentation
-│   ├── BOT_AI_UPGRADE.md    # AI improvement notes
-│   ├── DEPLOY.md            # Deployment guide
-│   ├── MARKETING.md         # Marketing strategy
-│   ├── ROADMAP.md           # Product roadmap
-│   └── decisions/           # Architecture decision records
+├── server/                      # Node.js/Express backend
+│   └── database/                # Local JSON storage
 │
-├── public/                  # Static assets
-├── dist/                    # Production build output
-├── CHANGELOG.md             # Version history
-├── SECURITY.md              # Security policy
-├── package.json             # Dependencies
-├── tsconfig.json            # TypeScript configuration
-├── vite.config.ts           # Vite configuration
-├── tailwind.config.js       # Tailwind configuration
-└── README.md                # This file
+├── public/                      # Static assets
+├── dist/                        # Production build output
+├── CHANGELOG.md
+├── SECURITY.md
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── tailwind.config.js
+└── README.md
 ```
 
 ---
@@ -572,7 +535,6 @@ npm run build -- --base=/poker-trainer/
 npm run deploy
 ```
 
-See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 
 ---
 
@@ -602,81 +564,40 @@ See [docs/DEPLOY.md](./docs/DEPLOY.md) for detailed deployment instructions.
 - [ ] Mobile app (React Native)
 - [ ] Cloud sync (optional)
 
-See [docs/ROADMAP.md](./docs/ROADMAP.md) for the complete product roadmap.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
-
-### Development Workflow
-
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
+2. Create a feature branch: `git checkout -b feature/my-feature`
 3. Make your changes
 4. Run tests: `npm test`
 5. Run linter: `npm run lint`
-6. Commit changes: `git commit -m 'feat: add amazing feature'`
-7. Push to branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request
+6. Commit: `git commit -m 'feat: add my feature'`
+7. Push and open a Pull Request
 
 ### Commit Convention
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/):
+Uses [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting)
-- `refactor:` - Code refactoring
-- `test:` - Test additions or changes
-- `chore:` - Build process or tooling changes
-
-### Code Style
-
-- Use TypeScript strict mode
-- Follow ESLint rules
-- Write unit tests for new features
-- Document complex algorithms
-- Keep functions small and focused
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation
+- `refactor:` — code refactoring
+- `test:` — test additions or changes
+- `chore:` — build or tooling changes
 
 ---
 
-## 📜 License & Usage
+## 📜 License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
-**Free to use, modify, and distribute.**
 ---
 
 ## 🙏 Acknowledgments
 
-- **Poker strategy** based on modern 6-max cash game theory
-- **Hand evaluation** algorithm inspired by Cactus Kev's evaluator
-- **UI design** inspired by PokerStars and GGPoker
-- **AI concepts** from "The Mathematics of Poker" by Chen & Ankenman
-
----
-
-## 📞 Contact & Support
-
-- **Issues:** [GitHub Issues](https://github.com/yourusername/poker-trainer/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/poker-trainer/discussions)
-- **Email:** your.email@example.com
-
----
-
-## 📊 Project Stats
-
-- **Lines of Code:** ~10,000+
-- **Test Coverage:** 85%+
-- **Components:** 15+
-- **Game Engine Files:** 11
-- **Documentation Pages:** 5+
-
----
-
-**Built with ❤️ as a demonstration of web game development skills.**
-
-*This is a training tool only. No real money is involved. Play responsibly.*
+- Hand evaluation algorithm inspired by Cactus Kev's evaluator
+- UI design inspired by PokerStars and GGPoker
+- Poker math concepts from *The Mathematics of Poker* by Chen & Ankenman
