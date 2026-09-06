@@ -121,7 +121,8 @@ export class PokerGame {
         else if (activeCount === 6) positions = ['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO'];
         else if (activeCount === 7) positions = ['BTN', 'SB', 'BB', 'UTG', 'MP', 'HJ', 'CO'];
         else if (activeCount === 8) positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'MP', 'HJ', 'CO'];
-        else positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'HJ', 'CO'];
+        else if (activeCount === 9) positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'HJ', 'CO'];
+        else positions = ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'UTG+2', 'MP', 'MP', 'HJ', 'CO'];
 
         let currentPos = 0;
         for (let i = 0; i < this.state.players.length; i++) {

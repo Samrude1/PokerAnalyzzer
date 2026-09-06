@@ -8,6 +8,7 @@ export const HomePage: React.FC = () => {
     const { user, logout } = useAuth();
     const [sessions, setSessions] = useState<SavedSession[]>([]);
     const [mode, setMode] = useState<'cash' | 'tournament' | 'sng'>('cash');
+    const [sngSize, setSngSize] = useState<10 | 6>(10);
 
     useEffect(() => {
         const loadSessions = async () => {
@@ -30,7 +31,8 @@ export const HomePage: React.FC = () => {
     const itmPercentage = tournamentsPlayed > 0 ? Math.round((itmCount / tournamentsPlayed) * 100) : 0;
 
     const startGame = (difficulty: string) => {
-        navigate(`/play?mode=${mode}&difficulty=${difficulty}`);
+        const sngParam = mode === 'sng' ? `&sngSize=${sngSize}` : '';
+        navigate(`/play?mode=${mode}&difficulty=${difficulty}${sngParam}`);
     };
 
     return (
@@ -107,6 +109,34 @@ export const HomePage: React.FC = () => {
                                 Sit & Go (SNG)
                             </button>
                         </div>
+
+                        {mode === 'sng' && (
+                            <div className="flex flex-wrap justify-center items-center gap-3 mt-5 animate-in fade-in duration-200">
+                                <span className="text-xs text-gray-400 uppercase tracking-wider font-bold">Pöytäkoko:</span>
+                                <button
+                                    onClick={() => setSngSize(10)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border ${
+                                        sngSize === 10
+                                            ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md shadow-amber-900/30'
+                                            : 'bg-gray-800/80 border-gray-700 text-gray-400 hover:text-white hover:border-gray-600'
+                                    }`}
+                                >
+                                    <span>🏛️</span>
+                                    <span>10-Max Full Ring (Klassikko, Top 3 ITM)</span>
+                                </button>
+                                <button
+                                    onClick={() => setSngSize(6)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border ${
+                                        sngSize === 6
+                                            ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md shadow-amber-900/30'
+                                            : 'bg-gray-800/80 border-gray-700 text-gray-400 hover:text-white hover:border-gray-600'
+                                    }`}
+                                >
+                                    <span>⚡</span>
+                                    <span>6-Max Short-Handed (Top 2 ITM)</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Game Modes */}

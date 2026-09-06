@@ -135,7 +135,7 @@ export class TournamentManager {
             return;
         }
 
-        const maxPerTable = 9;
+        const maxPerTable = this.config.isSng ? (this.config.playersCount || 10) : 9;
         const numTables = Math.ceil(activePlayers.length / maxPerTable);
         
         const newTables: PokerGame[] = [];
@@ -197,7 +197,8 @@ export class TournamentManager {
 
         if (activePlayersCount !== this.state.playersRemaining) {
             this.state.playersRemaining = activePlayersCount;
-            const numTablesNeeded = Math.ceil(activePlayersCount / 9);
+            const maxPerTable = this.config.isSng ? (this.config.playersCount || 10) : 9;
+            const numTablesNeeded = Math.ceil(activePlayersCount / maxPerTable);
             const currentTableCount = this.tables.length;
             
             // Re-balance ONLY when we need fewer tables to avoid constant reseating

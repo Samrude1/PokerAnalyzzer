@@ -51,6 +51,7 @@ export const GamePage: React.FC = () => {
     const sessionStartTime = useRef<string>(new Date().toISOString());
 
     const mode = searchParams.get('mode') as 'cash' | 'tournament' | 'sng' || 'cash';
+    const sngSize = parseInt(searchParams.get('sngSize') || '10', 10);
     const tableType = (searchParams.get('difficulty') as TableType) || 'mixed';
     
     // Tournament State
@@ -113,11 +114,12 @@ export const GamePage: React.FC = () => {
 
         if (mode === 'tournament' || mode === 'sng') {
             const isSng = mode === 'sng';
+            const sngPlayerCount = sngSize === 6 ? 6 : 10;
             const config = isSng
                 ? {
                     startingChips: 1500,
-                    playersCount: 6,
-                    handsPerLevel: 6, // Turbo 6-hand levels
+                    playersCount: sngPlayerCount,
+                    handsPerLevel: sngPlayerCount === 6 ? 6 : 8,
                     buyIn: 50,
                     isSng: true
                 }
@@ -135,7 +137,7 @@ export const GamePage: React.FC = () => {
         }
 
         return new PokerGame([hero, ...bots]);
-    }, [tableType, mode, user?.username]);
+    }, [tableType, mode, sngSize, user?.username]);
 
     // Initialize Game
     useEffect(() => {

@@ -53,16 +53,31 @@ const getPositions = (total: number) => {
             'bottom-0 right-[15%] translate-y-1/2', // 7
         ];
     }
+    if (total <= 9) {
+        return [
+            'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
+            'bottom-0 left-[15%] translate-y-1/2', // 1
+            'top-1/2 -left-4 -translate-y-1/2', // 2
+            'top-0 left-[20%] -translate-x-1/2 -translate-y-1/2', // 3
+            'top-0 left-[40%] -translate-x-1/2 -translate-y-1/2', // 4
+            'top-0 right-[40%] translate-x-1/2 -translate-y-1/2', // 5
+            'top-0 right-[20%] translate-x-1/2 -translate-y-1/2', // 6
+            'top-1/2 -right-4 -translate-y-1/2', // 7
+            'bottom-0 right-[15%] translate-y-1/2', // 8
+        ];
+    }
+    // 10 players (Full Ring Classic)
     return [
-        'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0
-        'bottom-0 left-[15%] translate-y-1/2', // 1
-        'top-1/2 -left-4 -translate-y-1/2', // 2
-        'top-0 left-[20%] -translate-x-1/2 -translate-y-1/2', // 3
-        'top-0 left-[40%] -translate-x-1/2 -translate-y-1/2', // 4
-        'top-0 right-[40%] translate-x-1/2 -translate-y-1/2', // 5
-        'top-0 right-[20%] translate-x-1/2 -translate-y-1/2', // 6
-        'top-1/2 -right-4 -translate-y-1/2', // 7
-        'bottom-0 right-[15%] translate-y-1/2', // 8
+        'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2', // 0 (Hero)
+        'bottom-0 left-[24%] translate-y-1/2', // 1
+        'bottom-4 left-6 translate-y-2', // 2
+        'top-1/2 -left-6 -translate-y-1/2', // 3
+        'top-4 left-6 -translate-y-2', // 4
+        'top-0 left-[34%] -translate-x-1/2 -translate-y-1/2', // 5
+        'top-0 right-[34%] translate-x-1/2 -translate-y-1/2', // 6
+        'top-4 right-6 -translate-y-2', // 7
+        'top-1/2 -right-6 -translate-y-1/2', // 8
+        'bottom-0 right-[24%] translate-y-1/2', // 9
     ];
 };
 
@@ -152,7 +167,8 @@ export const Seat = React.memo(function Seat({
         <div className={clsx(
             "absolute flex flex-col items-center justify-center w-40 h-40 transition-all duration-300 group",
             getPositions(totalSeats)[position],
-            player.status === 'folded' && "opacity-60"
+            player.status === 'folded' && "opacity-60",
+            totalSeats >= 10 && "scale-90"
         )}>
             {/* Turn Indicator - Pulsing ring */}
             {isActive && (
