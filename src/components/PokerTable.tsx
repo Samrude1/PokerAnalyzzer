@@ -6,7 +6,7 @@ import { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 interface PokerTableProps {
     gameState: GameState;
     onBuyIn?: (playerId: string) => void;
-    mode?: 'cash' | 'tournament';
+    mode?: 'cash' | 'tournament' | 'sng';
     isFinalTable?: boolean;
 }
 

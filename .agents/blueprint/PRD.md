@@ -23,6 +23,8 @@ This document specifies the reverse-engineered product requirements, user person
 ### 2.1 Gameplay & Poker Engine
 - **Cash Games**: Configurable difficulty (Beginner, Intermediate, Pro, Mixed) with 6-max table, automatic blinds, dealer button rotation, side pots, rebuy/auto-top-off mechanics.
 - **Tournaments (MTT)**: Up to 50 simulated players across multiple tables, blind level escalations, table rebalancing, final table transition overlay, and ITM prize distribution.
+- **Sit & Go (SNG)**: Single-table 6-max turbo tournament with 1,500 starting chips, 6-hand blind escalations, top 2 payouts (65% / 35%), ideal for rapid short-stack tournament endgame practice.
+- **Live Odds & Nash Push/Fold Tutor**: Collapsible in-game table assistant that calculates real-time pot odds, outs, draw equity (Rule of 4/2), and Nash Push/Fold advice (<15 BB).
 - **Bot Personalities**:
   - *Fish (Beginner)*: Loose-Passive (VPIP 45-60%, PFR 10-15%), calls down frequently, rarely raises.
   - *Nit (Intermediate)*: Tight-Passive (VPIP 15-20%, PFR 12-16%), plays only premium starting hands.
@@ -30,17 +32,22 @@ This document specifies the reverse-engineered product requirements, user person
   - *LAG (Pro)*: Loose-Aggressive (VPIP 28-35%, PFR 22-28%), frequent 3-bets, delayed c-bets, exploitative.
 - **HUD & Live Statistics**: Real-time player tracking for VPIP, PFR, 3-Bet%, Aggression Factor (AF), M-ratio, and positional stats.
 
-### 2.2 Analytics & Statistics Dashboard
+### 2.2 Study Hub & Short-Stack Push/Fold Trainer
+- **Push / Fold Quiz**: Fast-action interactive flashcard drills for short stacks (<15 BB) across all positions (SB, BTN, CO, MP, UTG), instant correctness feedback with streak tracking and mathematical Nash threshold explanations.
+- **13x13 Preflop Range Matrix**: Complete visual grid of all 169 starting hand combos with interactive position and stack slider (1-20 BB) highlighting Push vs Fold regions with color-coded max push depth.
+- **Pot Odds & Outs Sandbox**: Interactive playground to simulate any pot size, bet size, hero cards, and flop/turn cards with instant EV calculation and call recommendation.
+
+### 2.3 Analytics & Statistics Dashboard
 - **Session History**: Detailed session summaries tracking profit/loss, hands played, duration, and win rates.
 - **Interactive Hand Replayer / Viewer**: Hand-by-hand action logs, hole cards, street-by-street actions, and showdown results.
 - **Positional Heatmap & Matrix**: VPIP/PFR/ATS broken down by position (UTG, MP, CO, BTN, SB, BB).
 - **Showdown & C-Bet Math**: Flop/Turn/River C-bet dropoff charts, WTSD%, W$SD%, W$WSF%.
 
-### 2.3 Hand History Importer
+### 2.4 Hand History Importer
 - **PokerStars Parser**: Import raw text hand histories via drag-and-drop or clipboard paste.
 - **Metadata Extraction**: Parse blinds, hand IDs, table sizes, positions, actions, and chip movements into uniform JSON session structures.
 
-### 2.4 AI Poker Coach (OpenRouter)
+### 2.5 AI Poker Coach (OpenRouter)
 - **Deterministic Pre-computation**: Hand strength, action classifications (e.g. 3-bet vs iso-raise), and opponent tendencies are evaluated mathematically before LLM injection, preventing hallucinations.
 - **Session Review**: Evaluates session performance, identifies missed sizing or loose calls, and flags exploitative leaks.
 - **Global Leak Finder**: Queries cumulative database stats across all sessions to diagnose macro weaknesses (e.g. high fold-to-3-bet, passive turn aggression).
@@ -53,8 +60,9 @@ This document specifies the reverse-engineered product requirements, user person
 | Page | Route | Access | Purpose |
 | :--- | :--- | :--- | :--- |
 | **Login / Register** | `/login` | Public | Stateless JWT authentication, credentials entry |
-| **Lobby (Home)** | `/` | Private | Game mode selection (Cash vs MTT), difficulty selector, quick lifetime metrics |
-| **Game Table** | `/play` | Private | Live interactive poker table, betting controls, HUD, showdown cards, sound effects |
+| **Lobby (Home)** | `/` | Private | Game mode selection (Cash vs MTT vs SNG), difficulty selector, quick lifetime metrics |
+| **Game Table** | `/play` | Private | Live interactive poker table, betting controls, HUD, showdown cards, live odds & Nash tutor, sound effects |
+| **Study Hub** | `/trainer` | Private | Push/Fold Quiz drills, 13x13 Range Matrix, and Pot Odds Sandbox |
 | **Hand Importer** | `/import` | Private | PokerStars hand history file drop and text parser |
 | **Statistics** | `/stats` | Private | Visual graphs (Recharts), positional matrix, c-bet falloff, session list |
 | **AI Coach** | `/coach` | Private | Interactive LLM chat interface, Global Leak Finder, Session Review actions |

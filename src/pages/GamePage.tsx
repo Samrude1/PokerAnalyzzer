@@ -50,7 +50,7 @@ export const GamePage: React.FC = () => {
     const sessionId = useRef<string>(`sess_${Date.now()}`);
     const sessionStartTime = useRef<string>(new Date().toISOString());
 
-    const mode = searchParams.get('mode') as 'cash' | 'tournament' || 'cash';
+    const mode = searchParams.get('mode') as 'cash' | 'tournament' | 'sng' || 'cash';
     const tableType = (searchParams.get('difficulty') as TableType) || 'mixed';
     
     // Tournament State
@@ -111,13 +111,23 @@ export const GamePage: React.FC = () => {
             stats: OpponentProfiler.initializeStats()
         };
 
-        if (mode === 'tournament') {
-            const config = {
-                startingChips: 3000,
-                playersCount: 50,
-                handsPerLevel: 10,
-                buyIn: 100
-            };
+        if (mode === 'tournament' || mode === 'sng') {
+            const isSng = mode === 'sng';
+            const config = isSng
+                ? {
+                    startingChips: 1500,
+                    playersCount: 6,
+                    handsPerLevel: 6, // Turbo 6-hand levels
+                    buyIn: 50,
+                    isSng: true
+                }
+                : {
+                    startingChips: 3000,
+                    playersCount: 50,
+                    handsPerLevel: 10,
+                    buyIn: 100,
+                    isSng: false
+                };
             const tm = new TournamentManager(hero, config, tableType);
             tournamentRef.current = tm;
             setTournamentInfo({ ...tm.state });
@@ -134,8 +144,8 @@ export const GamePage: React.FC = () => {
         setGame(newGame);
         SoundManager.playClick();
         
-        if (mode === 'tournament' && tournamentRef.current?.tables.length === 1) {
-            // Started as a single table tournament (e.g. 9 players or fewer)
+        if ((mode === 'tournament' || mode === 'sng') && tournamentRef.current?.tables.length === 1) {
+            // Started as a single table tournament (e.g. SNG or 9 players or fewer)
             setHasSeenFinalTable(true);
         }
 
@@ -185,7 +195,7 @@ export const GamePage: React.FC = () => {
                 positionalStats: hero.stats.positionalStats
             };
 
-            if (mode === 'tournament' && tournamentRef.current) {
+            if ((mode === 'tournament' || mode === 'sng') && tournamentRef.current) {
                 const tm = tournamentRef.current;
                 let placement = tm.state.heroPlacement;
                 let prize = tm.state.heroPrize || 0;
@@ -254,8 +264,8 @@ export const GamePage: React.FC = () => {
         setShowShowdown(false);
 
         if (game.isGameOver()) {
-            if (mode === 'tournament' && tournamentRef.current) {
-                // If the table is game over in tournament, advance the tournament
+            if ((mode === 'tournament' || mode === 'sng') && tournamentRef.current) {
+                // If the table is game over in tournament/SNG, advance the tournament
                 tournamentRef.current.advanceTournament();
                 setTournamentInfo({ ...tournamentRef.current.state });
 
@@ -287,7 +297,7 @@ export const GamePage: React.FC = () => {
             }
         }
 
-        if (mode === 'tournament' && tournamentRef.current) {
+        if ((mode === 'tournament' || mode === 'sng') && tournamentRef.current) {
             tournamentRef.current.advanceTournament();
             setTournamentInfo({ ...tournamentRef.current.state });
 
@@ -335,14 +345,14 @@ export const GamePage: React.FC = () => {
 
     if (game.state.isGameOver) {
         let placement, prize;
-        if (mode === 'tournament' && tournamentRef.current) {
+        if ((mode === 'tournament' || mode === 'sng') && tournamentRef.current) {
             placement = tournamentRef.current.state.heroPlacement;
             prize = tournamentRef.current.state.heroPrize;
         }
         return <GameOverScreen 
             players={game.state.players} 
             onPlayAgain={handleLeaveGame}
-            isTournament={mode === 'tournament'}
+            isTournament={mode === 'tournament' || mode === 'sng'}
             tournamentPlacement={placement}
             tournamentPrize={prize}
         />;
@@ -441,6 +451,10 @@ export const GamePage: React.FC = () => {
                 onNextHand={handleNextHand}
                 isPlayerTurn={isPlayerTurn}
                 countdown={showShowdown ? countdown : undefined}
+                heroCards={hero.cards}
+                communityCards={game.state.communityCards}
+                position={hero.position}
+                isTournamentOrSng={mode === 'tournament' || mode === 'sng'}
             />
 
             {/* Showdown Overlay */}

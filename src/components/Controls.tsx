@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Card } from '../game/Deck';
+import { Position } from '../game/types';
+import { OddsCalculator } from '../game/OddsCalculator';
+import { NashPushFold } from '../game/NashPushFold';
 
 interface ControlsProps {
     onFold: () => void;
@@ -16,6 +20,10 @@ interface ControlsProps {
     onNextHand?: () => void;
     isPlayerTurn: boolean;
     countdown?: number;
+    heroCards?: Card[];
+    communityCards?: Card[];
+    position?: Position;
+    isTournamentOrSng?: boolean;
 }
 
 export function Controls({
@@ -33,10 +41,62 @@ export function Controls({
     phase,
     onNextHand,
     isPlayerTurn,
-    countdown
+    countdown,
+    heroCards,
+    communityCards,
+    position,
+    isTournamentOrSng
 }: ControlsProps) {
     const [raiseAmount, setRaiseAmount] = useState(minRaise);
     const [showSlider, setShowSlider] = useState(false);
+    const [tutorEnabled, setTutorEnabled] = useState(true);
+
+    const tutorAdvice = useMemo(() => {
+        if (!isPlayerTurn || !heroCards || heroCards.length !== 2) return null;
+
+        const stackBB = bigBlindAmount > 0 ? Math.round((userChips / bigBlindAmount) * 10) / 10 : 100;
+        const isPreflop = phase === 'pre-flop';
+
+        // 1. Preflop Push/Fold check for short stacks (<=15 BB) or Tournament/SNG
+        if (isPreflop && (stackBB <= 15 || isTournamentOrSng) && position) {
+            const pushFold = NashPushFold.evaluate(heroCards, position, stackBB);
+            return {
+                type: 'push-fold' as const,
+                title: 'Nash Push/Fold Coach',
+                badge: pushFold.verdict,
+                badgeColor: pushFold.isPush ? 'bg-amber-400 text-black' : 'bg-rose-500 text-white',
+                details: `${pushFold.handNotation} from ${position} is profitable to push up to ${pushFold.maxBB} BB (Current: ${stackBB} BB).`,
+                recommendation: pushFold.explanation
+            };
+        }
+
+        // 2. Post-flop Pot Odds & Outs calculation
+        if (!isPreflop && communityCards && communityCards.length >= 3) {
+            const effectiveStreet = phase === 'river' ? 'river' : phase === 'turn' ? 'turn' : 'flop';
+            const analysis = OddsCalculator.analyzeFullOdds(
+                heroCards,
+                communityCards,
+                callAmount,
+                pot,
+                effectiveStreet
+            );
+
+            const drawText = analysis.draws.map(d => `${d.name} (${d.outs} outs)`).join(', ');
+
+            return {
+                type: 'odds' as const,
+                title: 'Live Odds & Outs',
+                badge: analysis.isProfitableCall ? '+EV CALL' : '-EV CALL',
+                badgeColor: analysis.isProfitableCall ? 'bg-emerald-500 text-black' : 'bg-rose-500 text-white',
+                potOdds: `${analysis.potOddsPercent}%`,
+                equity: analysis.drawEquityPercent > 0 ? `${analysis.drawEquityPercent}%` : 'N/A',
+                draws: drawText || 'No major drawing outs',
+                recommendation: analysis.recommendation
+            };
+        }
+
+        return null;
+    }, [isPlayerTurn, heroCards, communityCards, callAmount, pot, phase, position, userChips, bigBlindAmount, isTournamentOrSng]);
 
     // Reset slider state when turn ends
     useEffect(() => {
@@ -216,6 +276,54 @@ export function Controls({
                                 CONFIRM BET
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Live Tutor & Odds Panel */}
+            {isPlayerTurn && tutorAdvice && (
+                <div className="mb-3 max-w-xl mx-auto w-full">
+                    <div className="bg-gray-800/95 border border-gray-700/80 backdrop-blur-md rounded-xl p-3 shadow-xl text-xs">
+                        <div className="flex items-center justify-between border-b border-gray-700/80 pb-1.5 mb-1.5">
+                            <div className="flex items-center gap-2">
+                                <span className="text-base">💡</span>
+                                <span className="font-bold text-gray-200 tracking-wide uppercase">{tutorAdvice.title}</span>
+                                <span className={`px-2 py-0.5 rounded font-black text-[10px] tracking-wider ${tutorAdvice.badgeColor}`}>
+                                    {tutorAdvice.badge}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setTutorEnabled(prev => !prev)}
+                                className="text-[10px] text-gray-400 hover:text-white transition"
+                            >
+                                {tutorEnabled ? 'Hide' : 'Show'}
+                            </button>
+                        </div>
+
+                        {tutorEnabled && (
+                            <div className="text-gray-300 space-y-1">
+                                {tutorAdvice.type === 'odds' ? (
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                            Pot Odds: <span className="font-bold text-amber-400">{tutorAdvice.potOdds}</span>
+                                            {tutorAdvice.equity !== 'N/A' && (
+                                                <span className="ml-2">
+                                                    | Draw Equity: <span className="font-bold text-cyan-400">{tutorAdvice.equity}</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="text-gray-400 italic">{tutorAdvice.draws}</div>
+                                    </div>
+                                ) : (
+                                    <div className="text-amber-200 font-medium">
+                                        {tutorAdvice.details}
+                                    </div>
+                                )}
+                                <div className="text-[11px] text-gray-400 font-medium pt-0.5">
+                                    {tutorAdvice.recommendation}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

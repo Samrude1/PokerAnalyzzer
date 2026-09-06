@@ -5,7 +5,7 @@ export interface SavedSession {
     handsPlayed: number;
     chipsWon: number;
     difficulty: string;
-    mode?: 'cash' | 'tournament';
+    mode?: 'cash' | 'tournament' | 'sng';
     buyInAmount?: number;
     prizeWon?: number;
     placement?: number;

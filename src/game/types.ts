@@ -147,6 +147,7 @@ export interface TournamentConfig {
     playersCount: number;
     handsPerLevel: number;
     buyIn: number;
+    isSng?: boolean;
 }
 
 export interface TournamentState {

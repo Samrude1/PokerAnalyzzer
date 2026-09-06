@@ -86,7 +86,18 @@ export class TournamentManager {
 
     private calculatePayouts(playersCount: number, buyIn: number): number[] {
         const prizePool = playersCount * buyIn;
-        // Payout ~15% of field
+
+        if (this.config.isSng) {
+            if (playersCount <= 6) {
+                // 6-Max SNG: Top 2 paid (65% / 35%)
+                return [Math.floor(prizePool * 0.65), Math.floor(prizePool * 0.35)];
+            } else {
+                // 9-Max SNG: Top 3 paid (50% / 30% / 20%)
+                return [Math.floor(prizePool * 0.50), Math.floor(prizePool * 0.30), Math.floor(prizePool * 0.20)];
+            }
+        }
+
+        // Payout ~15% of field for MTT
         const paidSpots = Math.max(1, Math.floor(playersCount * 0.15));
         
         if (paidSpots === 1) return [prizePool];

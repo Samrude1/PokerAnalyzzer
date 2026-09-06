@@ -16,7 +16,7 @@ interface SeatProps {
     totalSeats?: number;
     smallBlind?: number;
     bigBlind?: number;
-    mode?: 'cash' | 'tournament';
+    mode?: 'cash' | 'tournament' | 'sng';
 }
 
 const getPositions = (total: number) => {

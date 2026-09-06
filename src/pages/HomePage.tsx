@@ -7,7 +7,7 @@ export const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [sessions, setSessions] = useState<SavedSession[]>([]);
-    const [mode, setMode] = useState<'cash' | 'tournament'>('cash');
+    const [mode, setMode] = useState<'cash' | 'tournament' | 'sng'>('cash');
 
     useEffect(() => {
         const loadSessions = async () => {
@@ -46,7 +46,13 @@ export const HomePage: React.FC = () => {
                         <div className="text-xs text-poker-gold uppercase tracking-wider">{user?.isPro ? 'Pro Member' : 'Free Tier'}</div>
                     </div>
                 </div>
-                <div className="flex gap-4">
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => navigate('/trainer')}
+                        className="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black rounded-lg text-sm font-black transition flex items-center gap-2 shadow-lg"
+                    >
+                        <span>🎯</span> Study Hub
+                    </button>
                     <button
                         onClick={() => navigate('/stats')}
                         className="px-4 py-2 bg-poker-gold hover:bg-yellow-500 text-black rounded-lg text-sm font-bold transition flex items-center gap-2"
@@ -67,7 +73,7 @@ export const HomePage: React.FC = () => {
                     </button>
                     <button
                         onClick={logout}
-                        className="text-gray-400 hover:text-white transition"
+                        className="text-gray-400 hover:text-white transition ml-2 text-sm"
                     >
                         Sign Out
                     </button>
@@ -93,6 +99,12 @@ export const HomePage: React.FC = () => {
                                 className={`px-8 py-3 rounded-xl font-bold text-lg transition ${mode === 'tournament' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                             >
                                 Tournament (MTT)
+                            </button>
+                            <button 
+                                onClick={() => setMode('sng')}
+                                className={`px-8 py-3 rounded-xl font-bold text-lg transition ${mode === 'sng' ? 'bg-amber-500 text-black shadow-lg shadow-amber-900/50 font-extrabold' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                            >
+                                Sit & Go (SNG)
                             </button>
                         </div>
                     </div>
@@ -152,7 +164,7 @@ export const HomePage: React.FC = () => {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Tournaments Played</h4>
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">{mode === 'sng' ? 'SNGs Played' : 'Tournaments Played'}</h4>
                                 <div className="text-3xl font-bold text-white">{tournamentsPlayed}</div>
                             </div>
                             <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
@@ -160,13 +172,13 @@ export const HomePage: React.FC = () => {
                                 <div className="text-3xl font-bold text-white">{itmPercentage}%</div>
                             </div>
                             <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Net Tournament Profit</h4>
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">{mode === 'sng' ? 'Net SNG Profit' : 'Net Tournament Profit'}</h4>
                                 <div className={`text-3xl font-bold ${totalProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                     {totalProfit >= 0 ? '+' : ''}${totalProfit}
                                 </div>
                             </div>
                             <div className="bg-gray-800/50 p-6 rounded-xl border border-gray-700">
-                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">Last Tournament</h4>
+                                <h4 className="text-gray-400 text-sm uppercase tracking-wider mb-2">{mode === 'sng' ? 'Last SNG' : 'Last Tournament'}</h4>
                                 {lastSession ? (
                                     <div>
                                         <div className="text-xl font-bold text-white">{new Date(lastSession.date).toLocaleDateString()}</div>
@@ -176,7 +188,7 @@ export const HomePage: React.FC = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="text-xl text-gray-500">No tournaments yet</div>
+                                    <div className="text-xl text-gray-500">{mode === 'sng' ? 'No SNGs yet' : 'No tournaments yet'}</div>
                                 )}
                             </div>
                         </div>

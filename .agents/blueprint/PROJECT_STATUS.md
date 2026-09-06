@@ -9,7 +9,7 @@ This document tracks verified implementation progress, active feature matrix, te
 - **Estimated Completion**: ~95% (Core simulator, tournament manager, bot logic, live HUD, statistics analytics, PokerStars importer, OpenRouter AI coach, backend API test suite, and CI/CD workflow fully operational).
 - **Last Updated**: 2026-09-06
 - **Key Health Indicators**:
-  - **Unit & Integration Tests**: 🟩 37/37 Vitest tests passing across 6 test suites (game engine + backend API).
+  - **Unit & Integration Tests**: 🟩 59/59 Vitest tests passing across 8 test suites (game engine + push/fold + odds calculator + backend API).
   - **TypeScript Compilation**: 🟩 Passing clean (`tsc && vite build`).
   - **Linter**: 🟩 Passing clean (`npm run lint` - 0 errors, 0 warnings).
   - **Security**: 🟩 Hardened with bcryptjs password hashing and JWT warnings.
@@ -25,6 +25,11 @@ This document tracks verified implementation progress, active feature matrix, te
 | **Game Engine** | Hand Evaluation | 🟩 Complete | 7-card evaluator, kickers, hand ranks (11 unit tests passing) |
 | **Game Engine** | Betting & Pots | 🟩 Complete | Pre-flop through river, side pots, all-in distribution |
 | **Game Engine** | Tournament (MTT) | 🟩 Complete | Blind escalation, table rebalancing, final table alert |
+| **Game Engine** | Sit & Go (SNG) | 🟩 Complete | 1-table 6-max turbo format, 65%/35% top 2 payouts, push/fold focus |
+| **Study Hub** | Push/Fold Trainer | 🟩 Complete | Nash equilibrium trainer for 1-20 BB, instant shove/fold quiz |
+| **Study Hub** | 13x13 Range Matrix | 🟩 Complete | Visual interactive chart with color coded Nash push thresholds |
+| **Study Hub** | Pot Odds Sandbox | 🟩 Complete | Interactive playground for outs, Rule of 4/2 equity, and +EV call thresholds |
+| **Live HUD** | Live Odds & Nash Tutor | 🟩 Complete | Real-time in-game assistant calculating pot odds, outs, equity & shove advice |
 | **AI Opponents** | 4 Bot Personalities | 🟩 Complete | Fish, Nit, TAG, LAG with position & stack depth awareness |
 | **AI Opponents** | Opponent Profiler | 🟩 Complete | Real-time tracking of opponent VPIP, PFR, 3-bet |
 | **Live HUD** | Player Badges & Stats | 🟩 Complete | Seat stats, M-ratio color indicators, action alerts |

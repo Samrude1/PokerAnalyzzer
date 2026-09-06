@@ -40,9 +40,27 @@ Chronological record of architectural decisions, completed sprints, and developm
   - Implemented automated backward-compatible migration on server startup in `initDatabase()`, successfully migrating plaintext user passwords in `database/users.json` to secure `$2b$` bcrypt hashes.
   - Added warning check for unset `JWT_SECRET`.
   - Documented findings and remediation in `SECURITY_AUDIT.md`.
-- **Sprint 3 (API Testing & CI/CD Pipeline)**:
-  - Exported Express `app` cleanly in `server/server.js` with direct-run checks.
-  - Installed `supertest` and wrote 7 comprehensive API integration tests in `server/server.test.js`.
-  - Reached 37/37 passing Vitest tests (30 engine + 7 backend).
-  - Created `.github/workflows/ci.yml` automating linting, testing, and production building.
+- **Sprint 3 (Automated Testing & CI Pipeline)**:
+  - Added export to `server/server.js` allowing supertest imports without port binding collisions.
+  - Authored `server/server.test.js` using dynamic test user registration.
+  - Setup `.github/workflows/ci.yml` GitHub Actions pipeline for automated lint, unit/integration test, and build checks.
 
+---
+
+### 2026-09-06 (Sprint 4) — Sit & Go (SNG) & Push/Fold NLHE Study Hub
+- **Sit & Go (SNG) Tournament Engine**:
+  - Implemented 6-max single-table turbo tournament mode (`mode === 'sng'`) with 1,500 starting chips and 6-hand blind speed.
+  - Configured top-2 payout distribution (65% 1st, 35% 2nd) and SNG lobby statistics tracking.
+- **Nash Equilibrium Push/Fold Engine (`NashPushFold.ts`)**:
+  - Built comprehensive 169-hand preflop shove/fold matrix across 5 positions (SB, BTN, CO, MP, UTG) for 1–20 BB stacks.
+  - Created interactive **Push / Fold Quiz** with instant correctness feedback, score streak tracking, and strategic reasoning.
+  - Implemented **13x13 Interactive Preflop Range Matrix** visualizing push vs fold hand distributions dynamically as stack depth changes.
+- **Pot Odds & Outs Engine (`OddsCalculator.ts`)**:
+  - Deterministic pot odds calculator with draw detection (flush draws, open-ended straight draws, gutshots, overcards).
+  - Rule of 4 and Rule of 2 equity computation with +EV / -EV call threshold recommendations.
+  - Created **Pot Odds Sandbox** playground in the Study Hub (`/trainer`).
+- **Live In-Game Tutor HUD**:
+  - Embedded real-time collapsible odds & push/fold tutor in `Controls.tsx` during Hero's active turn.
+- **Test Coverage Expansion**:
+  - Added `NashPushFold.test.ts` (10 unit tests) and `OddsCalculator.test.ts` (11 unit tests).
+  - All 59 tests passing cleanly across 8 suites. production build verified.
