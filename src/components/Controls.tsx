@@ -49,7 +49,7 @@ export function Controls({
 }: ControlsProps) {
     const [raiseAmount, setRaiseAmount] = useState(minRaise);
     const [showSlider, setShowSlider] = useState(false);
-    const [tutorEnabled, setTutorEnabled] = useState(true);
+    const [tutorEnabled, setTutorEnabled] = useState(false);
 
     const tutorAdvice = useMemo(() => {
         if (!isPlayerTurn || !heroCards || heroCards.length !== 2) return null;
@@ -282,25 +282,41 @@ export function Controls({
 
             {/* Live Tutor & Odds Panel */}
             {isPlayerTurn && tutorAdvice && (
-                <div className="mb-3 max-w-xl mx-auto w-full">
-                    <div className="bg-gray-800/95 border border-gray-700/80 backdrop-blur-md rounded-xl p-3 shadow-xl text-xs">
-                        <div className="flex items-center justify-between border-b border-gray-700/80 pb-1.5 mb-1.5">
-                            <div className="flex items-center gap-2">
-                                <span className="text-base">💡</span>
-                                <span className="font-bold text-gray-200 tracking-wide uppercase">{tutorAdvice.title}</span>
-                                <span className={`px-2 py-0.5 rounded font-black text-[10px] tracking-wider ${tutorAdvice.badgeColor}`}>
-                                    {tutorAdvice.badge}
-                                </span>
-                            </div>
+                <div className="mb-2 max-w-xl mx-auto w-full">
+                    {!tutorEnabled ? (
+                        <div className="flex justify-center">
                             <button
-                                onClick={() => setTutorEnabled(prev => !prev)}
-                                className="text-[10px] text-gray-400 hover:text-white transition"
+                                onClick={() => setTutorEnabled(true)}
+                                className="px-3.5 py-1.5 bg-gray-800/80 hover:bg-gray-700/90 border border-gray-700/70 hover:border-amber-500/50 rounded-full text-xs text-gray-300 hover:text-white transition flex items-center gap-2 shadow-md group"
+                                title="Klikkaa nähdäksesi vihje"
                             >
-                                {tutorEnabled ? 'Hide' : 'Show'}
+                                <span className="text-sm group-hover:scale-110 transition-transform">💡</span>
+                                <span className="font-semibold text-gray-200">
+                                    {tutorAdvice.type === 'push-fold' ? 'Push/Fold -vihje' : 'Odds & Outs -vihje'}
+                                </span>
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-medium">
+                                    Klikkaa auki
+                                </span>
                             </button>
                         </div>
+                    ) : (
+                        <div className="bg-gray-800/95 border border-gray-700/80 backdrop-blur-md rounded-xl p-3 shadow-xl text-xs animate-in fade-in zoom-in-95 duration-150">
+                            <div className="flex items-center justify-between border-b border-gray-700/80 pb-1.5 mb-1.5">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base">💡</span>
+                                    <span className="font-bold text-gray-200 tracking-wide uppercase">{tutorAdvice.title}</span>
+                                    <span className={`px-2 py-0.5 rounded font-black text-[10px] tracking-wider ${tutorAdvice.badgeColor}`}>
+                                        {tutorAdvice.badge}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setTutorEnabled(false)}
+                                    className="text-[11px] text-gray-400 hover:text-white bg-gray-700/50 hover:bg-gray-700 px-2 py-0.5 rounded transition"
+                                >
+                                    ✕ Piilota
+                                </button>
+                            </div>
 
-                        {tutorEnabled && (
                             <div className="text-gray-300 space-y-1">
                                 {tutorAdvice.type === 'odds' ? (
                                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -323,8 +339,8 @@ export function Controls({
                                     {tutorAdvice.recommendation}
                                 </div>
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
 
