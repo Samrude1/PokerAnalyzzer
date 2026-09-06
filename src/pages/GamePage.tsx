@@ -408,11 +408,14 @@ export const GamePage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-6 text-sm items-center">
-                    {mode === 'tournament' && tournamentInfo && (
+                    {(mode === 'tournament' || mode === 'sng') && tournamentInfo && (
                         <div className="flex gap-4 text-xs font-bold bg-gray-900 px-4 py-2 rounded border border-gray-700 text-purple-400">
                             <div>Lvl: <span className="text-white">{tournamentInfo.currentLevel}</span></div>
-                            <div>Players: <span className="text-white">{tournamentInfo.playersRemaining}</span></div>
-                            <div>Avg: <span className="text-white">{tournamentInfo.averageStack}</span></div>
+                            <div>Players: <span className="text-white">{tournamentInfo.playersRemaining}/{tournamentRef.current?.config.playersCount || (mode === 'sng' ? 6 : 50)}</span></div>
+                            <div>Avg: <span className="text-white">${tournamentInfo.averageStack}</span></div>
+                            {tournamentInfo.playersRemaining <= (tournamentRef.current?.config.isSng ? 2 : Math.max(1, Math.floor((tournamentRef.current?.config.playersCount || 50) * 0.15))) && (
+                                <div className="text-amber-400 font-extrabold animate-pulse">🏆 ITM</div>
+                            )}
                         </div>
                     )}
                     <div className="text-gray-400">Blinds: <span className="text-white">${game.state.smallBlindAmount}/${game.state.bigBlindAmount}</span></div>
