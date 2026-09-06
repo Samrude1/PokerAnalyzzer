@@ -4,6 +4,10 @@ import { app, initDatabase } from './server.js';
 
 describe('Poker Backend API Integration Tests', () => {
     let authToken = '';
+    const testUser = {
+        username: `tester_${Date.now()}`,
+        password: 'TestPassword123'
+    };
 
     beforeAll(async () => {
         await initDatabase();
@@ -28,10 +32,21 @@ describe('Poker Backend API Integration Tests', () => {
             expect(res.body).toHaveProperty('error', 'Invalid input');
         });
 
+        it('POST /api/register creates a new user and returns JWT token', async () => {
+            const res = await request(app)
+                .post('/api/register')
+                .send(testUser);
+
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('token');
+            expect(res.body).toHaveProperty('username', testUser.username);
+            expect(res.body).not.toHaveProperty('password');
+        });
+
         it('POST /api/login rejects incorrect credentials', async () => {
             const res = await request(app)
                 .post('/api/login')
-                .send({ username: 'sr', password: 'wrongpassword' });
+                .send({ username: testUser.username, password: 'wrongpassword' });
 
             expect(res.status).toBe(401);
             expect(res.body).toHaveProperty('error', 'Invalid credentials');
@@ -40,11 +55,11 @@ describe('Poker Backend API Integration Tests', () => {
         it('POST /api/login authenticates valid user and returns JWT token', async () => {
             const res = await request(app)
                 .post('/api/login')
-                .send({ username: 'sr', password: '1234' });
+                .send(testUser);
 
             expect(res.status).toBe(200);
             expect(res.body).toHaveProperty('token');
-            expect(res.body).toHaveProperty('username', 'sr');
+            expect(res.body).toHaveProperty('username', testUser.username);
             expect(res.body).not.toHaveProperty('password');
 
             authToken = res.body.token;
