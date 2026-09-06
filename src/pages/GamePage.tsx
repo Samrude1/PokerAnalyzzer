@@ -144,7 +144,7 @@ export const GamePage: React.FC = () => {
             // We can't easily access the *latest* game state here in cleanup due to closure staleness
             // But we can try relying on a ref if we tracked stats in a ref
         };
-    }, [createGame]);
+    }, [createGame, mode]);
 
     const handleLeaveGame = async () => {
         if (!game) return;
@@ -152,7 +152,7 @@ export const GamePage: React.FC = () => {
         // Save Session
         const hero = game.state.players.find(p => p.isHuman);
         if (hero && user) {
-            let sessionData: import('../services/StorageService').SavedSession = {
+            const sessionData: import('../services/StorageService').SavedSession = {
                 id: sessionId.current,
                 userId: user.id,
                 date: sessionStartTime.current,

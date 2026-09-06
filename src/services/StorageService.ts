@@ -93,8 +93,8 @@ export class StorageService {
         }
     }
 
-    static async getSessions(userId?: string): Promise<SavedSession[]> {
-        // userId parameter kept for backwards compatibility but not sent to API
+    static async getSessions(_userId?: string): Promise<SavedSession[]> {
+        // _userId parameter kept for backwards compatibility but not sent to API
         try {
             const res = await fetch(`/api/sessions`, {
                 headers: this.getHeaders()

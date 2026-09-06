@@ -299,7 +299,7 @@ export class AdvancedStrategy implements BotStrategy {
 
         // Dynamic bet sizing based on opponent and board texture
         const betPot = (fraction: number) => {
-            let mult = villainType === 'Fish' ? 1.2 : 1.0;
+            const mult = villainType === 'Fish' ? 1.2 : 1.0;
             const size = Math.floor(pot * fraction * mult);
             return Math.min(Math.max(size, minRaise), totalStack);
         };
@@ -318,7 +318,7 @@ export class AdvancedStrategy implements BotStrategy {
                 return { action: 'raise', amount: getRaiseAmount() };
             }
             // Value bet sizing depends on board wetness
-            let betSize = (type === 'very-wet' || type === 'wet') ? 0.8 : (type === 'very-dry' ? 0.33 : 0.66);
+            const betSize = (type === 'very-wet' || type === 'wet') ? 0.8 : (type === 'very-dry' ? 0.33 : 0.66);
             return { action: 'raise', amount: betPot(betSize) };
         }
 

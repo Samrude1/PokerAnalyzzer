@@ -119,7 +119,7 @@ export const StatisticsPage: React.FC = () => {
         let foldToStealOpp = 0, foldToStealCount = 0;
         let foldToThreeBetOpp = 0, foldToThreeBetCount = 0;
 
-        let positionalStats: Record<string, any> = {};
+        const positionalStats: Record<string, any> = {};
 
         filteredSessions.forEach(s => {
             handsPlayed += s.handsPlayed || 0;
@@ -183,6 +183,7 @@ export const StatisticsPage: React.FC = () => {
 
         const ats = stealOpp > 0 ? (stealCount / stealOpp) * 100 : 0;
         const foldToSteal = foldToStealOpp > 0 ? (foldToStealCount / foldToStealOpp) * 100 : 0;
+        const foldToThreeBet = foldToThreeBetOpp > 0 ? (foldToThreeBetCount / foldToThreeBetOpp) * 100 : 0;
 
         return {
             handsPlayed,
@@ -198,6 +199,7 @@ export const StatisticsPage: React.FC = () => {
             cbetRiver: cbetRiver.toFixed(1),
             ats: ats.toFixed(1),
             foldToSteal: foldToSteal.toFixed(1),
+            foldToThreeBet: foldToThreeBet.toFixed(1),
             positionalStats
         };
     }, [filteredSessions]);

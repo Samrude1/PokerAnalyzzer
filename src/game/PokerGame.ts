@@ -314,7 +314,7 @@ export class PokerGame {
     }
 
     private advanceActivePlayer() {
-        let idx = this.state.players.findIndex(p => p.id === this.state.activePlayerId);
+        const idx = this.state.players.findIndex(p => p.id === this.state.activePlayerId);
         let nextIdx = (idx + 1) % this.state.players.length;
         let loopCount = 0;
 

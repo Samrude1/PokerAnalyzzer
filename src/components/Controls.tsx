@@ -61,6 +61,7 @@ export function Controls({
                 setRaiseAmount(newAmount);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [minRaise, maxRaise, showSlider]); // Removed raiseAmount from deps to avoid fighting UI updates
 
     // Calculate bet sizing buttons

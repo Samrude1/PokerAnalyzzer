@@ -10,12 +10,17 @@ import { z } from 'zod';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
+import bcrypt from 'bcryptjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_dev';
+if (!process.env.JWT_SECRET) {
+    console.warn('⚠️ Warning: JWT_SECRET is not set in .env. Using fallback key for development.');
+}
 
 // The root database directory
 const DB_DIR = path.join(__dirname, '..', 'database');
@@ -92,6 +97,19 @@ async function initDatabase() {
     try {
         const usersData = await fs.readFile(USERS_FILE, 'utf-8');
         users = JSON.parse(usersData);
+
+        // Auto-migrate any plaintext passwords to bcrypt hashes
+        let migratedCount = 0;
+        for (const u of users) {
+            if (u.password && !u.password.startsWith('$2a$') && !u.password.startsWith('$2b$')) {
+                u.password = await bcrypt.hash(u.password, 10);
+                migratedCount++;
+            }
+        }
+        if (migratedCount > 0) {
+            await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 4), 'utf-8');
+            console.log(`🔒 Upgraded ${migratedCount} plaintext password(s) to bcrypt hashes.`);
+        }
     } catch (e) {
         users = [];
         await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 4), 'utf-8');
@@ -224,10 +242,11 @@ app.post('/api/register', authLimiter, async (req, res) => {
         return res.status(400).json({ error: 'Username already exists' });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
         id: 'u_' + Date.now() + Math.random().toString(36).substr(2, 5),
         username,
-        password,
+        password: hashedPassword,
         isPro: true
     };
 
@@ -246,7 +265,23 @@ app.post('/api/login', authLimiter, async (req, res) => {
     const { username, password } = parsed.data;
     
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user || user.password !== password) {
+    if (!user) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    let isPasswordValid = false;
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+        isPasswordValid = await bcrypt.compare(password, user.password);
+    } else {
+        // Fallback for legacy plaintext password, upgrade to bcrypt on match
+        if (user.password === password) {
+            isPasswordValid = true;
+            user.password = await bcrypt.hash(password, 10);
+            await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 4), 'utf-8');
+        }
+    }
+
+    if (!isPasswordValid) {
         return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -424,9 +459,14 @@ app.post('/api/coach/chat', verifyToken, coachLimiter, async (req, res) => {
     await aiAnalyzer.analyze(user, question, res, actionType, contextSessionId, sessionIdToFile);
 });
 
-const PORT = 3001;
-app.listen(PORT, async () => {
-    await initDatabase();
-    console.log(`Local Database Server running on http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3001;
+
+const isDirectRun = process.argv[1] && (process.argv[1].endsWith('server.js') || process.argv[1].includes('server.js'));
+if (isDirectRun) {
+    app.listen(PORT, async () => {
+        await initDatabase();
+        console.log(`Local Database Server running on http://localhost:${PORT}`);
+    });
 }
-);
+
+export { app, initDatabase };
